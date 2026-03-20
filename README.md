@@ -62,6 +62,24 @@ ParametricGuard is modeled to be zero-touch post-onboarding.
 7. **Automated Claim & Instant Payout:** A logical claim record is created autonomously. Using Razorpay/UPI APIs, the payout is pushed immediately to the rider's bank account.
 8. **Feedback Loop:** Rider receives an SMS: *"Your income is protected: ₹X credited."*
 
+### ⚙️ Automation & AI Pipeline
+
+ZyloCover (ParametricGuard) follows a fully event-driven automated pipeline, powered by specialized agents that constantly operate in the background:
+
+1. **Data Ingestion Agent**  
+   *Collects and normalized real-time weather, AQI, and structured external APIs (IMD/OpenWeatherMap/WAQI).*
+   
+2. **Risk Evaluation Agent**  
+   *Evaluates incoming telemetry against the dynamic thresholds and the worker's geographical risk zone.*
+   
+3. **Decision Agent**  
+   *Acts as a truth engine—it cross-references data to determine whether a qualified trigger event has officially occurred while parsing for any anomalies or simulated GPS spoofing.*
+   
+4. **Payout Execution Agent**  
+   *Instantly initiates the automated logical claim and processes the payout directly into the rider's wallet or bank account.*
+
+> *This autonomous pipeline ensures zero manual intervention, guaranteeing a virtually real-time proactive response to disruptions without human adjudication.*
+
 ---
 
 ## 5. Multi-Layer Fraud Detection & Prevention
