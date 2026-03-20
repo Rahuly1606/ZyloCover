@@ -36,7 +36,7 @@ export default function Onboarding() {
         <div className="gradient-primary flex h-16 w-16 items-center justify-center rounded-2xl">
           <Shield className="h-8 w-8 text-primary-foreground" />
         </div>
-        <h1 className="font-display text-2xl font-bold">GigShield</h1>
+        <h1 className="font-display text-2xl font-bold">ZyloCover</h1>
         <p className="text-sm text-muted-foreground">AI-Powered Insurance for Gig Workers</p>
       </motion.div>
 

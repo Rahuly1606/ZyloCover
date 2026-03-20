@@ -22,7 +22,7 @@ export default function Admin() {
         </button>
         <div>
           <h1 className="font-display text-xl font-bold">Admin Dashboard</h1>
-          <p className="text-sm text-muted-foreground">GigShield Overview</p>
+          <p className="text-sm text-muted-foreground">ZyloCover Overview</p>
         </div>
       </div>
 
