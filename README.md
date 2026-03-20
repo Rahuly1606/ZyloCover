@@ -64,7 +64,29 @@ ParametricGuard is modeled to be zero-touch post-onboarding.
 
 ### ⚙️ Automation & AI Pipeline
 
-ZyloCover (ParametricGuard) follows a fully event-driven automated pipeline, powered by specialized agents that constantly operate in the background:
+ZyloCover (ParametricGuard) follows a fully event-driven automated pipeline, powered by specialized agents that constantly operate in the background.
+
+```mermaid
+graph TD
+    A[Third-Party APIs <br/> IMD / OpenWeather / WAQI] -->|Real-time Telemetry| B(1. Data Ingestion Agent)
+    B --> C{2. Risk Evaluation Agent}
+    C -->|Threshold NOT Met| B
+    C -->|Threshold Breached <br/> e.g. Rain > 50mm| D[3. Decision Agent]
+    
+    D --> E{Fraud & GPS Check}
+    E -->|Spoofing Detected| F[Flag Account / Soft Review]
+    E -->|Validated Genuine| G[4. Payout Execution Agent]
+    
+    G -->|Razorpay / Node / API| H(((Instant Wallet Payout)))
+    
+    style A fill:#2d3748,stroke:#8892b0,color:#fff
+    style B fill:#3182ce,stroke:#2b6cb0,color:#fff
+    style C fill:#dd6b20,stroke:#c05621,color:#fff
+    style D fill:#805ad5,stroke:#c05621,color:#fff
+    style E fill:#e53e3e,stroke:#c53030,color:#fff
+    style G fill:#38a169,stroke:#2f855a,color:#fff
+    style H fill:#48bb78,stroke:#276749,stroke-width:4px,color:#fff
+```
 
 1. **Data Ingestion Agent**  
    *Collects and normalized real-time weather, AQI, and structured external APIs (IMD/OpenWeatherMap/WAQI).*
