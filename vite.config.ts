@@ -10,7 +10,9 @@ export default defineConfig(({ mode }) => ({
     hmr: {
       overlay: false,
     },
+    middlewareMode: false,
   },
+  appType: "spa",
   plugins: [react()].filter(Boolean),
   resolve: {
     alias: {
