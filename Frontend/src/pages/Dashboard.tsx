@@ -4,18 +4,14 @@ import { motion } from 'framer-motion'
 import { AlertTriangle, CheckCircle2, Clock, FileText, Shield, Wallet, XCircle } from 'lucide-react'
 import AppShell from '@/components/AppShell'
 import { Button } from '@/components/ui/button'
+import { EnvironmentalSnapshot } from '@/components/EnvironmentalSnapshot'
+import { WeatherAlert } from '@/components/WeatherAlert'
 import { useAuth } from '@/hooks/useAuth'
-import { policyService } from '@/services/policyService'
+import { policyApi } from '@/api/policies'
 import { claimsService } from '@/services/claimsService'
+import { pricingService } from '@/services/pricingService'
 import { formatters } from '@/utils/formatters'
-
-interface Policy {
-  id: number
-  coverage_tier: string
-  premium_amount: number
-  status: string
-  valid_till: string
-}
+import type { Policy } from '@/types/api'
 
 interface Claim {
   id: number
@@ -25,23 +21,58 @@ interface Claim {
   created_at: string
 }
 
+interface EnvironmentalData {
+  temp_c: number
+  rainfall_mm: number
+  aqi: number
+  wind_kmph: number
+  active_triggers: string[]
+  data_source: 'openweathermap+waqi' | 'mock'
+}
+
+interface Trigger {
+  trigger_type: string
+  severity_pct: number
+  payout_multiplier: number
+}
+
 export const Dashboard = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
   const [policy, setPolicy] = useState<Policy | null>(null)
   const [claims, setClaims] = useState<Claim[]>([])
+  const [environmentalData, setEnvironmentalData] = useState<EnvironmentalData | null>(null)
+  const [activeTriggers, setActiveTriggers] = useState<Trigger[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [policyResult, claimsResult] = await Promise.all([
-          policyService.getActive(),
-          claimsService.getClaims(1, 3),
+        const [policiesResult, claimsResult] = await Promise.all([
+          policyApi.getActive(),
+          claimsService.getClaims(1, 3) as Promise<any>,
         ])
-        setPolicy(policyResult.data)
-        setClaims(claimsResult.data || [])
+        // Get first active policy if exists
+        // @ts-ignore
+        setPolicy(policiesResult && policiesResult.length > 0 ? policiesResult[0] : null)
+        setClaims(claimsResult?.data || [])
+
+        // Fetch environmental data - backend will use user's data if not provided
+        try {
+          // @ts-ignore
+          const pricingData = await pricingService.calculatePricing()
+          console.log('Pricing data received:', pricingData)
+          if (pricingData?.environmental_snapshot) {
+            console.log('Setting environmental data:', pricingData.environmental_snapshot)
+            setEnvironmentalData(pricingData.environmental_snapshot)
+            setActiveTriggers(pricingData.active_triggers || [])
+          } else {
+            console.warn('No environmental snapshot in response:', pricingData)
+          }
+        } catch (envError) {
+          console.error('Failed to fetch environmental data:', envError)
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load data')
       } finally {
@@ -49,7 +80,7 @@ export const Dashboard = () => {
       }
     }
     fetchData()
-  }, [])
+  }, [user])
 
   if (loading) {
     return (
@@ -61,7 +92,7 @@ export const Dashboard = () => {
     )
   }
 
-  const riskScore = user?.risk_score || 0
+  const riskScore = user?.user_risk_score || 0
   const riskIcon = riskScore < 30
     ? <CheckCircle2 className="h-5 w-5 text-green-600" />
     : riskScore < 60
@@ -87,13 +118,31 @@ export const Dashboard = () => {
           </div>
         )}
 
+        {/* Environmental Data Section */}
+        {environmentalData && (
+          <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.05 }}>
+            <EnvironmentalSnapshot data={environmentalData} zone={user?.work_zone} />
+          </motion.div>
+        )}
+
+        {/* Active Triggers Alert */}
+        {activeTriggers && activeTriggers.length > 0 && (
+          <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.08 }}>
+            <WeatherAlert triggers={activeTriggers} />
+          </motion.div>
+        )}
+
         <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.1 }} className="grid grid-cols-2 gap-3">
           <div className="glass-card p-4 border border-purple-200">
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs text-muted-foreground">Active Policy</p>
               <Shield className="h-4 w-4 text-purple-600" />
             </div>
-            <p className="font-bold text-slate-900 text-lg">{policy?.coverage_tier || 'None'}</p>
+            <p className="font-bold text-slate-900 text-lg">
+              {policy?.coverage_tier 
+                ? policy.coverage_tier.charAt(0).toUpperCase() + policy.coverage_tier.slice(1)
+                : 'None'}
+            </p>
           </div>
           <div className="glass-card p-4 border border-purple-200">
             <div className="flex items-center justify-between mb-2">
@@ -107,14 +156,14 @@ export const Dashboard = () => {
               <p className="text-xs text-muted-foreground">This Week</p>
               <Wallet className="h-4 w-4 text-purple-600" />
             </div>
-            <p className="font-bold text-slate-900 text-lg">{formatters.currency(user?.avg_weekly_income || 0)}</p>
+            <p className="font-bold text-slate-900 text-lg">₹{policy?.total_claimed_this_week || 0}</p>
           </div>
           <div className="glass-card p-4 border border-purple-200">
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs text-muted-foreground">Claims</p>
               <FileText className="h-4 w-4 text-purple-600" />
             </div>
-            <p className="font-bold text-slate-900 text-lg">{claims.length}</p>
+            <p className="font-bold text-slate-900 text-lg">{policy?.claim_count_this_week || 0}</p>
           </div>
         </motion.div>
 
@@ -123,8 +172,12 @@ export const Dashboard = () => {
             <>
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <h3 className="font-display text-lg font-bold text-slate-900">{policy.coverage_tier} Coverage</h3>
-                  <p className="text-xs text-muted-foreground mt-1">Active until {formatters.longDate(policy.valid_till)}</p>
+                  <h3 className="font-display text-lg font-bold text-slate-900">
+                    {policy.coverage_tier.charAt(0).toUpperCase() + policy.coverage_tier.slice(1)} Coverage
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Active until {policy.end_date ? new Date(policy.end_date).toLocaleDateString() : 'N/A'}
+                  </p>
                 </div>
                 <span className="inline-block rounded-full bg-green-100 text-green-700 border border-green-300 px-3 py-1 text-xs font-semibold capitalize">
                   {policy.status}
@@ -134,11 +187,11 @@ export const Dashboard = () => {
               <div className="grid grid-cols-2 gap-3 mt-4">
                 <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
                   <p className="text-xs text-muted-foreground">Weekly Premium</p>
-                  <p className="font-bold text-slate-900 mt-1">{formatters.currency(policy.premium_amount)}</p>
+                  <p className="font-bold text-slate-900 mt-1">₹{policy.weekly_premium?.toLocaleString()}</p>
                 </div>
                 <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
-                  <p className="text-xs text-muted-foreground">Coverage Tier</p>
-                  <p className="font-bold text-slate-900 mt-1">{policy.coverage_tier}</p>
+                  <p className="text-xs text-muted-foreground">Max Payout/Week</p>
+                  <p className="font-bold text-slate-900 mt-1">₹{policy.max_weekly_payout?.toLocaleString()}</p>
                 </div>
               </div>
 
@@ -147,7 +200,7 @@ export const Dashboard = () => {
                   View Policy
                 </Button>
                 <Button onClick={() => navigate('/plans')} variant="outline" className="flex-1 border-purple-300 text-slate-900">
-                  Renew
+                  Buy More
                 </Button>
               </div>
             </>

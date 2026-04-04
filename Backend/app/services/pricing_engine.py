@@ -167,9 +167,11 @@ class ActuarialPricingEngine:
         )
 
         # ── Step 9: Coverage & Payout Limits ────────────────────────────────────
-        max_weekly_payout = final_premium * 3.0  # 3:1 loss ratio target
-        daily_income_insured = daily_income_by_zone
-        coverage_hours = inp.avg_daily_hours * 7  # Full week
+        # max_weekly_payout = daily_income × 5.0 × platform_multiplier (capped at daily_income × 7)
+        max_weekly_payout = inp.avg_daily_income * 5.0 * platform_factor
+        max_weekly_payout = min(max_weekly_payout, inp.avg_daily_income * 7.0)  # hard cap
+        daily_income_insured = inp.avg_daily_income
+        coverage_hours = inp.avg_daily_hours
 
         # ── Risk Assessment ────────────────────────────────────────────────────
         risk_score = min(adjusted_frequency, 1.0)

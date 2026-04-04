@@ -11,6 +11,7 @@ export interface AuthResponse {
 
 // User Profile (including location)
 export interface User {
+    is_fraud_flagged: any
     id: number
     name: string
     email: string
@@ -73,15 +74,17 @@ export interface Policy {
     user_id: number
     coverage_tier: "basic" | "standard" | "premium"
     income_replacement_ratio: number
-    premium_per_week: number
-    max_payout_per_week: number
-    pricing_breakdown: PremiumBreakdown
+    weekly_premium: number
+    daily_income_insured: number
+    max_weekly_payout: number
+    pricing_breakdown?: PremiumBreakdown
     status: "active" | "expired" | "cancelled"
-    cooling_period_ends_at: string  // 2-hour gap enforcement
-    created_at: string
-    end_at: string
+    cooling_period_ends_at?: string
+    created_at?: string
+    start_date?: string
+    end_date: string
     days_remaining?: number
-    amount_claimed?: number
+    total_claimed_this_week?: number
     claim_count_this_week?: number
 }
 

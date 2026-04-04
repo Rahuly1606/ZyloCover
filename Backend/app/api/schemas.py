@@ -27,11 +27,11 @@ class SeverityBand(str, Enum):
 
 class PremiumCalculationRequest(BaseModel):
     """Request for premium calculation preview"""
-    daily_income: float = Field(..., gt=0, description="Daily income in ₹")
-    city: str = Field(..., description="City of operation")
-    zone: str = Field(..., description="Work zone")
-    platform: str = Field(..., description="Delivery platform")
-    coverage_tier: str = Field(..., description="Insurance coverage level (basic/standard/premium)")
+    daily_income: Optional[float] = Field(None, gt=0, description="Daily income in ₹")
+    city: Optional[str] = Field(None, description="City of operation")
+    zone: Optional[str] = Field(None, description="Work zone")
+    platform: Optional[str] = Field(None, description="Delivery platform")
+    coverage_tier: Optional[str] = Field(None, description="Insurance coverage level (basic/standard/premium)")
     
     class Config:
         json_schema_extra = {
@@ -73,12 +73,37 @@ class ExperienceRatingBreakdown(BaseModel):
     experience_rated_premium: float
 
 
+class EnvironmentalSnapshot(BaseModel):
+    """Real-time environmental conditions"""
+    temp_c: float = Field(description="Temperature in Celsius")
+    rainfall_mm: float = Field(description="Rainfall in millimeters")
+    aqi: int = Field(description="Air Quality Index (0-500)")
+    wind_kmph: float = Field(description="Wind speed in km/h")
+    active_triggers: List[str] = Field(description="List of active environmental triggers")
+    data_source: str = Field(description="Data source: 'openweathermap+waqi' or 'mock'")
+
+
+class TriggerInfo(BaseModel):
+    """Active environmental trigger information"""
+    trigger_type: str = Field(description="Type of trigger (rain, heat, aqi, wind)")
+    severity_pct: float = Field(description="Severity percentage (0-100)")
+    payout_multiplier: float = Field(description="Payout multiplier (1.0-1.5)")
+
+
 class PremiumCalculationResponse(BaseModel):
     """Full premium calculation response"""
     final_premium: float = Field(description="Final weekly premium in ₹")
     min_premium: float
     max_premium: float
     breakdown: Dict[str, Any] = Field(description="Complete calculation breakdown")
+    environmental_snapshot: Optional[EnvironmentalSnapshot] = Field(
+        default=None, 
+        description="Real-time environmental data snapshot"
+    )
+    active_triggers: List[TriggerInfo] = Field(
+        default_factory=list,
+        description="Active environmental triggers"
+    )
 
 
 # ─── POLICY CREATION ────────────────────────────────────────────────────────

@@ -1,11 +1,12 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ShieldCheck } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { ShieldCheck, LogIn } from 'lucide-react'
 import { authService } from '@/services/authService'
 import { useAuth } from '@/hooks/useAuth'
-import { Button } from '@/components/common/Button'
-import { Input } from '@/components/common/Input'
-import { Checkbox } from '@/components/common/Checkbox'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Navbar } from '@/components/layout/Navbar'
 
 export const Login = () => {
   const navigate = useNavigate()
@@ -39,74 +40,139 @@ export const Login = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-amber-50 flex flex-col items-center justify-center px-4">
-      {/* Logo */}
-      <Link to="/" className="flex items-center gap-2 mb-12">
-        <div className="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center">
-          <ShieldCheck className="h-6 w-6 text-white" />
-        </div>
-        <span className="font-bold text-2xl text-gray-900">zylocover</span>
-      </Link>
+    <div className="min-h-screen bg-slate-50">
+      <Navbar />
+      
+      <div className="px-4 py-12 pb-20">
+        <motion.div 
+          initial={{ y: 20, opacity: 0 }} 
+          animate={{ y: 0, opacity: 1 }}
+          className="w-full max-w-md mx-auto"
+        >
+          <div className="glass-card p-6 md:p-8 border border-purple-200 space-y-6">
+            {/* Header */}
+            <motion.div 
+              initial={{ y: 20, opacity: 0 }} 
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.1 }}
+              className="text-center"
+            >
+              <p className="text-xs text-muted-foreground mb-2">Account Access</p>
+              <h1 className="font-display text-2xl font-bold text-slate-900">
+                Welcome Back
+              </h1>
+              <p className="text-sm text-muted-foreground mt-2">
+                {isAdmin ? 'Admin panel access' : 'Login to your account'}
+              </p>
+            </motion.div>
 
-      {/* Login Form */}
-      <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">
-          {isAdmin ? 'Admin Login' : 'Welcome Back'}
-        </h2>
-        <p className="text-gray-600 mb-8">
-          {isAdmin ? 'Login to admin panel' : 'Login to your account'}
-        </p>
+            {/* Error Message */}
+            {error && (
+              <motion.div 
+                initial={{ y: 10, opacity: 0 }} 
+                animate={{ y: 0, opacity: 1 }}
+                className="p-4 bg-red-50 border border-red-200 rounded-lg"
+              >
+                <p className="text-sm text-red-700">{error}</p>
+              </motion.div>
+            )}
 
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-sm text-red-700">{error}</p>
+            {/* Form */}
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <motion.div 
+                initial={{ y: 20, opacity: 0 }} 
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.15 }}
+              >
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Email Address
+                </label>
+                <Input
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="your@email.com"
+                  required
+                />
+              </motion.div>
+
+              <motion.div 
+                initial={{ y: 20, opacity: 0 }} 
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.2 }}
+              >
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Password
+                </label>
+                <Input
+                  type="password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  required
+                />
+              </motion.div>
+
+              <motion.div 
+                initial={{ y: 20, opacity: 0 }} 
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.25 }}
+                className="flex items-center gap-2"
+              >
+                <input
+                  type="checkbox"
+                  id="isAdmin"
+                  checked={isAdmin}
+                  onChange={e => setIsAdmin(e.target.checked)}
+                  className="w-4 h-4 rounded border-gray-300 cursor-pointer"
+                />
+                <label htmlFor="isAdmin" className="text-sm text-slate-600 cursor-pointer">
+                  Login as Admin
+                </label>
+              </motion.div>
+
+              <motion.div 
+                initial={{ y: 20, opacity: 0 }} 
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.3 }}
+              >
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className="gap-2 w-full"
+                >
+                  <LogIn className="h-4 w-4" />
+                  {loading ? 'Logging in...' : 'Login'}
+                </Button>
+              </motion.div>
+            </form>
+
+            {/* Divider */}
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-200"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-muted-foreground">Or</span>
+              </div>
+            </div>
+
+            {/* Sign Up Link */}
+            {!isAdmin && (
+              <motion.div 
+                initial={{ y: 20, opacity: 0 }} 
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.35 }}
+                className="text-center text-sm"
+              >
+                <span className="text-muted-foreground">Don't have an account? </span>
+                <Link to="/onboarding" className="text-purple-600 font-semibold hover:text-purple-700">
+                  Sign up
+                </Link>
+              </motion.div>
+            )}
           </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <Input
-            label="Email Address"
-            type="email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            placeholder="your@email.com"
-            required
-          />
-
-          <Input
-            label="Password"
-            type="password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            placeholder="Enter your password"
-            required
-          />
-
-          <Checkbox
-            name="isAdmin"
-            label="Login as Admin"
-            checked={isAdmin}
-            onChange={e => setIsAdmin(e.target.checked)}
-          />
-
-          <Button
-            type="submit"
-            disabled={loading}
-            isLoading={loading}
-            fullWidth
-          >
-            {loading ? 'Logging in...' : 'Login'}
-          </Button>
-        </form>
-
-        {!isAdmin && (
-          <p className="text-center text-gray-600 mt-6">
-            Don't have an account?{' '}
-            <Link to="/onboarding" className="text-purple-600 font-semibold hover:underline">
-              Sign up here
-            </Link>
-          </p>
-        )}
+        </motion.div>
       </div>
     </div>
   )

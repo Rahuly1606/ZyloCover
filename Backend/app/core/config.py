@@ -12,7 +12,9 @@ class Settings(BaseSettings):
     """Application Settings from .env"""
 
     # ── Database ────────────────────────────────────────────────────────
-    DATABASE_URL: str = "mysql+aiomysql://root:password@localhost:3306/zylocover"
+    # Aiven MySQL (development): avnadmin:AVNS_rOnElif_Zt3IhpWU2Y1@mysql-21d912cf-csitelge-ca54.c.aivencloud.com:19240/defaultdb
+    # Local MySQL (optional): mysql+pymysql://root:Rahul%401606@localhost:3306/zylocover
+    DATABASE_URL: str = "mysql+pymysql://avnadmin:AVNS_rOnElif_Zt3IhpWU2Y1@mysql-21d912cf-csitelge-ca54.c.aivencloud.com:19240/defaultdb"
 
     # ── JWT & Security ──────────────────────────────────────────────────
     SECRET_KEY: str = "your-secret-key-change-this-in-production-32-chars-min"
@@ -39,6 +41,11 @@ class Settings(BaseSettings):
 
     # ── Mock Data ──────────────────────────────────────────────────────
     USE_MOCK_ENV_DATA: bool = True
+
+    # ── Weather APIs ────────────────────────────────────────────────────
+    OPENWEATHER_API_KEY: str = ""  # Get from https://openweathermap.org/api
+    WAQI_API_KEY: str = ""         # Get from https://aqicn.org/data-platform/
+    WEATHER_API_TIMEOUT: int = 5   # API call timeout in seconds
 
     class Config:
         env_file = ".env"

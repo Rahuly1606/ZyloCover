@@ -17,24 +17,25 @@ interface LoginData {
 }
 
 interface AuthResponse {
-  status: string
-  data: {
-    access_token: string
-    user: {
-      id: number
-      name: string
-      email: string
-      phone: string
-      city: string
-      zone_risk: string
-      avg_daily_income: number
-      avg_weekly_income: number
-      is_blacklisted: boolean
-      risk_score: number
-      fraud_flags: number
-    }
+  data: any
+  access_token: string
+  user: {
+    id: number
+    name: string
+    email: string
+    phone: string
+    city: string
+    zone_risk: string
+    avg_daily_income: number
+    avg_weekly_income: number
+    is_blacklisted: boolean
+    risk_score: number
+    fraud_flags: number
   }
-  message: string
+}
+
+interface AdminAuthResponse {
+  admin_token: string
 }
 
 export const authService = {
@@ -46,7 +47,7 @@ export const authService = {
     return API.post('/auth/login', { email, password })
   },
 
-  adminLogin: async (email: string, password: string) => {
+  adminLogin: async (email: string, password: string): Promise<AdminAuthResponse> => {
     return API.post('/auth/admin-login', { email, password })
   }
 }

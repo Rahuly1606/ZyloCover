@@ -29,5 +29,23 @@ export const adminService = {
     API.get('/admin/analytics'),
 
   getAuditLog: (page = 1, size = 20) =>
-    API.get('/admin/analytics', { params: { page, size } })
+    API.get('/admin/analytics', { params: { page, size } }),
+
+  getFlaggedClaims: (page = 1, size = 20) =>
+    API.get('/admin/fraud-queue', { params: { page, size } }),
+
+  approveFlaggedClaim: (claimId: number) =>
+    API.put(`/admin/fraud-queue/${claimId}/approve`),
+
+  rejectFlaggedClaim: (claimId: number) =>
+    API.put(`/admin/fraud-queue/${claimId}/reject`),
+
+  getStats: () =>
+    API.get('/admin/stats'),
+
+  getAlerts: (page = 1, size = 10) =>
+    API.get('/admin/alerts', { params: { page, size } }),
+
+  createClaimFromSimulation: (data: any) =>
+    API.post('/admin/claims/from-simulation', data)
 }

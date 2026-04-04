@@ -3,6 +3,7 @@
 
 import { authService } from '@/services/authService'
 import { policyService } from '@/services/policyService'
+import { pricingService } from '@/services/pricingService'
 import { triggerService } from '@/services/triggerService'
 
 /**
@@ -37,10 +38,11 @@ async function testSignup() {
       email: `test${Date.now()}@example.com`,
       phone: '9876543210',
       password: 'TestPass123!',
-      city: 'Bangalore',
-      delivery_platform: 'Swiggy',
-      vehicle_type: 'bike',
-      avg_daily_income: 500
+      city: 'Hyderabad',
+      platform: 'swiggy',
+      work_zone: 'zone_d_residential',
+      avg_daily_income: 500,
+      avg_daily_hours: 8
     })
     console.log('[OK] Signup successful:', result.data?.user)
     return result.data?.access_token

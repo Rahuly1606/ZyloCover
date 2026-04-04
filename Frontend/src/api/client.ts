@@ -7,6 +7,15 @@ interface ApiError {
     detail?: string
 }
 
+function isApiError(value: unknown): value is ApiError {
+    return (
+        typeof value === 'object' &&
+        value !== null &&
+        'status' in value &&
+        'message' in value
+    )
+}
+
 class ApiClient {
     private baseUrl: string
 
@@ -65,7 +74,7 @@ class ApiClient {
 
             return await response.json()
         } catch (error) {
-            if (error instanceof ApiError) throw error
+            if (isApiError(error)) throw error
             
             const networkError = {
                 status: 0,
