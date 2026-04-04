@@ -1,2 +1,2 @@
-import Dashboard from "./Dashboard";
-export default Dashboard;
+import { Landing } from "./Landing";
+export { Landing as Index };

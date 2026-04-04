@@ -1,23 +1,666 @@
-<div align="center">
+# 🎨 zylocover Frontend - React 18 Insurance UI
 
-# ParametricGuard
-**AI-Powered Parametric Insurance & "Gig-OS" for Delivery Workers**
+> **Modern, responsive React application for gig workers to manage parametric insurance**.
 
-![Status](https://img.shields.io/badge/Status-Hackathon_Ready-success?style=for-the-badge) ![Guidewire DEVTrails](https://img.shields.io/badge/Guidewire-DEVTrails_2026-blue?style=for-the-badge) ![Focus](https://img.shields.io/badge/Focus-Parametric_Insurance-orange?style=for-the-badge)
-
-*Protecting the gig workforce with zero-touch, instant income protection driven by objective data telemetry.*
-
-</div>
+Real-time premium calculations, policy management, claims with fraud transparency, and admin analytics.
 
 ---
 
-## Team: ImpactForge
-| Name | Role |
-| :--- | :--- |
-| **Rahul Kumar** | Team Leader |
-| **Munna Kumar** | Member |
-| **V Rishitha Reddy** | Member |
-| **Durgesh Kumar chaudhari**| Member |
+## 🚀 Quick Start
+
+```bash
+# Install dependencies
+npm install
+
+# Start dev server (localhost:5173)
+npm run dev
+
+# Build for production
+npm run build
+
+# Run tests
+npm run test
+
+# Run end-to-end tests
+npm run test:e2e
+```
+
+✅ Visit **http://localhost:5173** to use the app
+
+---
+
+## 📂 Project Structure
+
+```
+Frontend/
+├── src/
+│   ├── pages/                    # 8 main pages
+│   │   ├── Index.tsx            # Home
+│   │   ├── Onboarding.tsx       # 4-step signup with location
+│   │   ├── Plans.tsx            # Coverage tier selection
+│   │   ├── Dashboard.tsx        # Policy overview
+│   │   ├── Claims.tsx           # Claims history
+│   │   ├── Earnings.tsx         # Payouts & analytics
+│   │   ├── Monitor.tsx          # Live triggers
+│   │   ├── Admin.tsx            # Admin dashboard 📊
+│   │   └── NotFound.tsx         # 404
+│   │
+│   ├── components/              # Reusable UI
+│   │   ├── AppShell.tsx        # Layout wrapper
+│   │   ├── BottomNav.tsx       # Mobile navigation
+│   │   ├── NavLink.tsx         # Nav item
+│   │   ├── RiskBadge.tsx       # Zone risk indicator 🌊
+│   │   └── ui/                 # 60+ Shadcn/ui components
+│   │       ├── button.tsx, card.tsx, input.tsx, etc.
+│   │
+│   ├── api/                     # API client
+│   │   ├── client.ts           # Axios instance
+│   │   ├── auth.ts             # Login/signup
+│   │   ├── user.ts             # Profile + location
+│   │   ├── policy.ts           # Policy CRUD
+│   │   ├── pricing.ts          # Premium calculation
+│   │   ├── claims.ts           # Claims queries
+│   │   └── admin.ts            # Admin endpoints
+│   │
+│   ├── hooks/
+│   │   ├── useApi.ts           # API wrapper
+│   │   ├── use-mobile.tsx      # Mobile detection
+│   │   └── use-toast.ts        # Toast notifications
+│   │
+│   ├── App.tsx                 # Main app + routing
+│   ├── main.tsx                # Entry point
+│   └── index.css               # Tailwind
+│
+├── package.json
+├── vite.config.ts
+├── tailwind.config.ts
+├── tsconfig.json
+└── README.md                   # This file
+```
+
+---
+
+## 📄 Key Pages
+
+### 1. Onboarding.tsx - 4-Step Signup
+```
+Step 1: Email & Password
+Step 2: Name, Phone
+Step 3: Work Details + 📍 Location Capture
+        └─ Browser Geolocation API
+        └─ Shows reverse geocoded address
+Step 4: Review & Confirm
+```
+
+### 2. Plans.tsx - Coverage Tier Selection
+```
+BASIC      STANDARD     PREMIUM
+60% IRR    75% IRR      90% IRR
+₹15-25/    ₹25-45/      ₹40-80/
+week       week         week
+
+Select → Shows full actuarial breakdown
+         ├─ Pure Premium (expected loss)
+         ├─ Gross Premium (÷0.67 for margins)
+         ├─ Experience Rating
+         └─ Final Premium
+```
+
+### 3. Dashboard.tsx - Active Policy Overview
+```
+Your Policy
+├─ #: RK-POL-260404-A3F2K1
+├─ Coverage: Standard (75%)
+├─ Premium: ₹32.50/week
+├─ Days Left: 4
+├─ Claimed: ₹525 / ₹2,625
+└─ Status: ✅ ACTIVE
+```
+
+### 4. Claims.tsx - Claims + Fraud Transparency
+```
+Claim CLM-260404102030-XYZ123
+├─ Rain Trigger (68 mm/hr)
+├─ Severity: Full (100% loss)
+├─ Amount: ₹525.00 ✅ PAID
+├─ Fraud Score: 35/100 ✅ APPROVED
+│
+└─ [View Audit] → Shows all 5 fraud layers
+   ├─ Layer 1: Duplicate check → ✅ Pass
+   ├─ Layer 2: Policy age → ✅ Pass
+   ├─ Layer 3: GPS zone → ✅ Pass
+   ├─ Layer 4: Frequency → ✅ Pass
+   └─ Layer 5: Anomalies → ⚠️ Score +35 (new account)
+```
+
+### 5. Admin.tsx - Real-Time Dashboard
+```
+├─ Loss Ratio: 72% ✅ (Target)
+├─ Combined Ratio: 97% ✅ (Profitable)
+├─ Active Policies: 1,250
+├─ Claims Today: 127
+│   ├─ ✅ Auto-Approved: 118 (93%)
+│   ├─ ⚠️ Flagged: 7 (5%)
+│   └─ ❌ Rejected: 2 (2%)
+├─ Fraud Rate: 2% (Excellent)
+├─ Loss Ratio by City Heatmap
+└─ Top 10 Risk Users
+```
+
+---
+
+## 🔌 API Integration
+
+### Premium Calculator
+```typescript
+const { data: premium } = await api.pricing.calculate({
+  daily_income: 700,
+  city: "mumbai",
+  zone: "zone_a_flood_prone",
+  platform: "swiggy",
+  coverage_tier: "standard"
+})
+
+// Shows breakdown:
+// Pure: ₹8.20
+// Gross (÷0.67): ₹12.24
+// Experience: 1.0×
+// Final: ₹32.50 ✅
+```
+
+### User Profile with Location
+```typescript
+// Get profile (includes GPS coords + address)
+const profile = await api.user.getProfile()
+// → { name, email, latitude, longitude, address, ... }
+
+// Update profile (with location capture from browser)
+await api.user.updateProfile({
+  name: "Ravi Kumar",
+  avg_daily_income: 700,
+  latitude: 19.0760,
+  longitude: 72.8777,
+  address: "Bangalore, Karnataka"
+})
+```
+
+### Policy Management
+```typescript
+// Create 7-day policy
+await api.policy.create({ coverage_tier: "standard" })
+
+// Get active policies
+const policies = await api.policy.getActive()
+
+// Get specific policy
+const policy = await api.policy.getById(5)
+```
+
+### Claims History with Fraud Audit
+```typescript
+// Get all claims
+const claims = await api.claims.list()
+
+// Get full fraud audit for a claim
+const audit = await api.claims.getAudit(claimId)
+// → { fraud_score, layers: [...], decision }
+```
+
+---
+
+## 🎨 UI Components
+
+### 60+ Shadcn/ui Components
+- ✅ Button, Card, Input, Dialog
+- ✅ Table, Tabs, Accordion
+- ✅ Sidebar, Navigation Menu
+- ✅ Alert, Toast, PopOver
+- ✅ Chart, Progress, Slider
+- ✅ Calendar, DatePicker
+- ✅ Form validation with Zod
+
+### Custom Components
+- `RiskBadge` - Zone risk indicator (🌊 Flood Prone Zone - HIGH RISK)
+- `AppShell` - Layout wrapper with header/footer
+- `BottomNav` - Mobile navigation
+
+---
+
+## 📱 Responsive Design
+
+- ✅ Mobile-first with TailwindCSS
+- ✅ Bottom navigation on mobile
+- ✅ Touch-friendly buttons (48px min)
+- ✅ Gesture support (swipe, pinch)
+- ✅ One-handed navigation
+
+---
+
+## 🧪 Testing
+
+```bash
+# Unit tests (Vitest)
+npm run test
+
+# E2E tests (Playwright)  
+npm run test:e2e
+
+# Coverage
+npm run test:coverage
+```
+
+---
+
+## 🚀 Build & Deploy
+
+```bash
+# Build for production
+npm run build
+# → Outputs to dist/
+
+# Preview production build
+npm run preview
+
+# Deploy to Vercel (configured)
+vercel deploy
+```
+
+### Environment Variables
+```env
+VITE_API_URL=https://api.zylocover.com
+VITE_APP_NAME=zylocover
+```
+
+---
+
+## 📦 Key Dependencies
+
+| Package | Purpose |
+|---------|---------|
+| `react` 18 | UI library |
+| `react-router-dom` 6 | Routing |
+| `axios` | HTTP client |
+| `shadcn/ui` | UI components |
+| `tailwindcss` | Styling |
+| `typescript` | Type safety |
+| `sonner` | Toast notifications |
+| `lucide-react` | Icons (200+) |
+| `vitest` | Testing |
+
+---
+
+## 🔐 Authentication
+
+JWT-based with AuthContext:
+
+```typescript
+const { login, logout, user } = useAuth()
+
+// Login
+await login("ravi@example.com", "password")
+
+// Protected routes wrap with ProtectedRoute component
+
+// Auto-logout on 401
+if (error.status === 401) {
+  logout()
+  navigate('/login')
+}
+```
+
+---
+
+## ✨ Features
+
+- ✅ Real-time premium calculation
+- ✅ Actuarial transparency (full breakdown shown)
+- ✅ Coverage tier comparison
+- ✅ 7-day policy auto-renewal
+- ✅ Claims with fraud scores visible
+- ✅ Full fraud audit trails (5 layers)
+- ✅ Admin real-time analytics
+- ✅ Location capture (geolocation API)
+- ✅ Mobile-optimized UI
+- ✅ Dark mode support (coming soon)
+
+---
+
+## 📞 Support
+
+For issues or questions:
+- **Frontend Issues:** frontend@zylocover.in
+- **GitHub Issues:** Create issue in repo
+- **API Docs:** https://api.zylocover.com/docs
+
+---
+
+**Built with React 18, TypeScript, and Tailwind CSS.** ✨
+│   ├── lib/
+│   │   └── utils.ts        # Utility functions
+│   │
+│   ├── types/
+│   │   └── api.ts          # TypeScript API interfaces
+│   │
+│   ├── main.tsx
+│   ├── App.tsx
+│   └── index.css
+│
+├── public/
+│   ├── robots.txt
+│   └── _redirects
+│
+├── package.json
+├── tsconfig.json
+├── tailwind.config.ts
+├── vite.config.ts
+└── vitest.config.ts
+```
+
+---
+
+## 🎨 Pages Overview
+
+### 1. **Onboarding** (`/onboarding`)
+Signup/login flow with email/password authentication
+```
+→ Sign up with name, email, password
+→ Verify platform & work zone
+→ Confirm income details
+→ Redirect to dashboard
+```
+
+### 2. **Dashboard** (`/`)
+Main landing page with real-time stats
+```
+→ Active policy status
+→ Recent claims & payouts
+→ Total earnings from insurance
+→ Risk profile visualization
+```
+
+### 3. **Plans** (`/plans`)
+Policy management interface
+```
+→ View active policy
+→ Calculate new premium (actuarial pricing)
+→ Purchase 7-day policy
+→ View policy history
+```
+
+### 4. **Claims** (`/claims`)
+Claims history & fraud scores
+```
+→ List all claims with status
+→ View claim details (payout, fraud score)
+→ Filter by date range
+→ View fraud analysis
+```
+
+### 5. **Monitor** (`/monitor`)
+Real-time environmental alerts
+```
+→ Active triggers in user's zone
+→ Weather forecast integration
+→ AQI alerts
+→ Risk visualization
+```
+
+### 6. **Admin** (`/admin`)
+System-wide dashboard (admin users only)
+```
+→ Total users, active policies
+→ System KPIs & loss ratio
+→ Claims statistics
+→ Fraud rejection rates
+```
+
+---
+
+## 🔌 API Integration
+
+### 1. Authentication Context
+```typescript
+// src/contexts/AuthContext.tsx
+Manages:
+- JWT token storage (localStorage)
+- User session state
+- Login/logout/signup
+- Protected route redirection
+```
+
+### 2. API Client
+```typescript
+// src/api/client.ts
+Features:
+- Automatic JWT injection
+- Error handling & retry logic
+- Request/response transformers
+- Base URL configuration
+```
+
+### 3. Data Fetching Hook
+```typescript
+// src/hooks/useApi.ts
+Generic hook for any API endpoint:
+- Loading & error states
+- Data transformation
+- Cache support
+```
+
+### 4. Typed API Modules
+```typescript
+// src/api/user.ts, claims.ts, etc.
+Each module wraps backend endpoints:
+- Type-safe request/response
+- Error handling
+- Built on api/client.ts
+```
+
+---
+
+## 🔐 Authentication Flow
+
+```
+1. User enters email/password on Onboarding page
+   ↓
+2. POST /auth/signup or /auth/login
+   ↓
+3. Backend returns JWT token
+   ↓
+4. Frontend stores in localStorage
+   ↓
+5. AuthContext updates global state
+   ↓
+6. API client injects token: Authorization: Bearer <JWT>
+   ↓
+7. All subsequent requests authenticated
+   ↓
+8. Dashboard loads protected user data
+```
+
+---
+
+## 🎨 UI Component Library (shadcn/ui)
+
+Pre-built components included:
+- Forms (input, select, checkbox, textarea)
+- Cards & layouts
+- Buttons & badges
+- Dialogs & modals
+- Tables & data grids
+- Alerts & notifications
+- Tabs & accordions
+- Toasts
+
+See `src/components/ui/` for full list.
+
+---
+
+## 🎯 Key Features
+
+✅ **Full TypeScript** - Zero `any` types
+✅ **Real API Data** - No mock data anywhere
+✅ **JWT Authentication** - Secure token-based auth
+✅ **Responsive Design** - Mobile-first approach
+✅ **Error Boundaries** - Graceful error handling
+✅ **Loading States** - Skeleton screens & spinners
+✅ **Form Validation** - Pydantic-level strict
+✅ **Toast Notifications** - User feedback
+
+---
+
+## 🔧 Development Commands
+
+```bash
+# Start dev server (hot reload)
+npm run dev
+
+# Build for production
+npm run build
+
+# Preview production build
+npm run preview
+
+# Run tests
+npm run test
+
+# Run linter
+npm run lint
+```
+
+---
+
+## 📱 Responsive Design
+
+- **Mobile** (< 640px) - Bottom navigation, full-width layouts
+- **Tablet** (640px - 1024px) - Side-by-side layouts
+- **Desktop** (> 1024px) - Multi-column dashboards
+
+Hook available: `useIsMobile()` for responsive logic
+
+---
+
+## 🌍 Environment Variables
+
+```env
+# Required
+VITE_API_URL=http://localhost:8000
+
+# Optional
+VITE_APP_NAME=ZyloCover
+VITE_APP_ENV=development
+```
+
+---
+
+## 🐛 Troubleshooting
+
+**Port 5173 already in use?**
+```bash
+npm run dev -- --port 5174
+```
+
+**Node modules issues?**
+```bash
+rm -rf node_modules
+npm install
+```
+
+**TypeScript errors?**
+```bash
+# Check tsconfig.json is correct
+npm run lint
+```
+
+**API calls failing with 401?**
+```
+→ Token might be expired
+→ Check localStorage: DevTools → Application → Local Storage
+→ Try logging out and back in
+```
+
+**CORS errors?**
+```
+→ Ensure backend is running on :8000
+→ Backend has CORS enabled for localhost:5173
+→ Check browser console for exact error
+```
+
+---
+
+## 🚀 Deployment
+
+### Vercel (Recommended)
+```bash
+# Already configured in vercel.json
+npm run build
+vercel deploy
+```
+
+### Docker
+```bash
+docker build -t zylocover-frontend .
+docker run -p 3000:3000 zylocover-frontend
+```
+
+### Static Host (Netlify, GitHub Pages)
+```bash
+npm run build
+# Deploy dist/ folder
+```
+
+---
+
+## 📊 Tech Stack
+
+| Aspect | Technology |
+|--------|-----------|
+| UI Framework | React 18 |
+| Language | TypeScript |
+| Build Tool | Vite |
+| Styling | Tailwind CSS |
+| UI Components | shadcn/ui |
+| Forms | React Hook Form |
+| HTTP Client | Fetch API |
+| State Mgmt | Context API + localStorage |
+| Testing | Vitest |
+| Playwright E2E | Playwright |
+
+---
+
+## 🔗 Connected Backend Endpoints
+
+All 7 backend modules are integrated:
+
+| Module | Endpoints |
+|--------|-----------|
+| Auth | `/auth/signup`, `/auth/login` |
+| User | `/user/profile`, `/user/stats` |
+| Policy | `/policy/create`, `/policy/active` |
+| Pricing | `/pricing/calculate` |
+| Claims | `/claims/` |
+| Trigger | `/trigger/active` |
+| Admin | `/admin/dashboard` |
+
+See [../Backend/README.md](../Backend/README.md) for full API docs.
+
+---
+
+## 🎓 Learning Resources
+
+- React: https://react.dev
+- TypeScript: https://www.typescriptlang.org
+- Tailwind CSS: https://tailwindcss.com
+- shadcn/ui: https://ui.shadcn.com
+- Vite: https://vitejs.dev
+
+---
+
+**For complete documentation, see [../README.md](../README.md)**
+
+**Backend API Docs:** http://localhost:8000/docs (when backend running)
+
+
 
 ---
 

@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { Home, Shield, Activity, Wallet, BarChart3 } from "lucide-react";
+import { Home, Shield, Activity, Wallet, BarChart3, User } from "lucide-react";
 
 const navItems = [
   { path: "/", icon: Home, label: "Home" },
@@ -7,6 +7,7 @@ const navItems = [
   { path: "/monitor", icon: Activity, label: "Monitor" },
   { path: "/claims", icon: Wallet, label: "Claims" },
   { path: "/earnings", icon: BarChart3, label: "Earnings" },
+  { path: "/profile", icon: User, label: "Profile" },
 ];
 
 export default function BottomNav() {

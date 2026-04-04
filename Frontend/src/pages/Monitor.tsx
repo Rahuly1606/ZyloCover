@@ -1,37 +1,37 @@
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Cloud, Wind, Thermometer, AlertTriangle, Activity, Zap } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { motion } from "framer-motion";
+import { Cloud, Wind, AlertCircle, Activity, Loader2, MapPin } from "lucide-react";
 import AppShell from "@/components/AppShell";
-import { mockWeather } from "@/data/mockData";
+import LogoutButton from "@/components/LogoutButton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useApi } from "@/hooks/useApi";
+import { triggersApi } from "@/api/triggers";
+import type { Trigger } from "@/types/api";
+
+const triggerIcons: Record<string, any> = {
+  heavy_rain: Cloud,
+  strong_winds: Wind,
+  extreme_heat: AlertCircle,
+  high_aqi: Activity,
+  curfew: MapPin,
+  platform_outage: AlertCircle,
+  flash_flood: Cloud,
+};
+
+const triggerColors: Record<string, string> = {
+  heavy_rain: "bg-blue-500/20 text-blue-600",
+  strong_winds: "bg-cyan-500/20 text-cyan-600",
+  extreme_heat: "bg-orange-500/20 text-orange-600",
+  high_aqi: "bg-red-500/20 text-red-600",
+  curfew: "bg-purple-500/20 text-purple-600",
+  platform_outage: "bg-gray-500/20 text-gray-600",
+  flash_flood: "bg-indigo-500/20 text-indigo-600",
+};
 
 export default function Monitor() {
-  const [weather, setWeather] = useState(mockWeather);
-  const [triggered, setTriggered] = useState(false);
+  const { data: triggers, loading, error } = useApi<Trigger[]>(() => triggersApi.getActive());
 
-  const simulateRain = () => {
-    setWeather((w) => ({
-      ...w,
-      rainProbability: 95,
-      condition: "Heavy Rain",
-      alerts: [{ type: "rain", message: "Heavy rainfall detected in your area", severity: "High" }],
-    }));
-    setTriggered(true);
-  };
-
-  const simulateAqi = () => {
-    setWeather((w) => ({
-      ...w,
-      aqi: 340,
-      aqiLabel: "Hazardous",
-      alerts: [{ type: "aqi", message: "AQI exceeds 300 — payout triggered", severity: "High" }],
-    }));
-    setTriggered(true);
-  };
-
-  const reset = () => {
-    setWeather(mockWeather);
-    setTriggered(false);
+  const getTriggerLabel = (type: string) => {
+    return type.split("_").map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
   };
 
   return (
@@ -40,81 +40,110 @@ export default function Monitor() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="font-display text-xl font-bold">Live Monitoring</h1>
-            <p className="text-sm text-muted-foreground">Bengaluru • Real-time</p>
+            <p className="text-sm text-muted-foreground">Environmental alerts</p>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="relative flex h-3 w-3">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
-              <span className="relative inline-flex h-3 w-3 rounded-full bg-success" />
-            </span>
-            <span className="text-xs font-medium text-success">Active</span>
-          </div>
-        </div>
-
-        {/* Status Grid */}
-        <div className="grid grid-cols-2 gap-3">
-          {[
-            { icon: Thermometer, label: "Temperature", value: `${weather.temperature}°C`, color: "text-warning" },
-            { icon: Cloud, label: "Rain Chance", value: `${weather.rainProbability}%`, color: weather.rainProbability > 70 ? "text-destructive" : "text-secondary-foreground" },
-            { icon: Wind, label: "AQI", value: `${weather.aqi}`, sub: weather.aqiLabel, color: weather.aqi > 200 ? "text-destructive" : "text-muted-foreground" },
-            { icon: Activity, label: "Condition", value: weather.condition, color: "text-accent-foreground" },
-          ].map(({ icon: Icon, label, value, sub, color }) => (
-            <div key={label} className="glass-card p-4">
-              <Icon className={`mb-2 h-5 w-5 ${color}`} />
-              <p className="text-xs text-muted-foreground">{label}</p>
-              <p className="font-display text-lg font-bold">{value}</p>
-              {sub && <p className="text-xs text-muted-foreground">{sub}</p>}
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-3 w-3">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
+                <span className="relative inline-flex h-3 w-3 rounded-full bg-success" />
+              </span>
+              <span className="text-xs font-medium text-success">Live</span>
             </div>
-          ))}
-        </div>
-
-        {/* System Monitor */}
-        <div className="glass-card flex items-center gap-3 p-4">
-          <div className="gradient-teal flex h-10 w-10 items-center justify-center rounded-xl">
-            <Activity className="h-5 w-5 text-secondary-foreground" />
-          </div>
-          <div>
-            <p className="text-sm font-semibold">System Monitoring Active</p>
-            <p className="text-xs text-muted-foreground">AI checks every 15 minutes</p>
+            <LogoutButton />
           </div>
         </div>
 
-        {/* Alerts */}
-        <AnimatePresence>
-          {weather.alerts.map((alert, i) => (
-            <motion.div
-              key={i}
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              className="flex items-start gap-3 rounded-2xl bg-destructive/10 p-4"
-            >
-              <AlertTriangle className="mt-0.5 h-5 w-5 text-destructive" />
-              <div>
-                <p className="text-sm font-semibold text-destructive">⚠️ Trigger Alert</p>
-                <p className="text-sm text-foreground">{alert.message}</p>
-                <p className="mt-1 text-xs text-muted-foreground">Automatic payout initiated</p>
-              </div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
+        {error && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>Failed to load monitoring data. Please try again.</AlertDescription>
+          </Alert>
+        )}
 
-        {/* Simulation Controls */}
-        <div className="space-y-2">
-          <h3 className="font-display text-sm font-semibold text-muted-foreground">SIMULATION</h3>
-          <div className="grid grid-cols-2 gap-2">
-            <Button variant="outline" onClick={simulateRain} disabled={triggered} className="gap-2">
-              <Zap className="h-4 w-4" /> Rain Event
-            </Button>
-            <Button variant="outline" onClick={simulateAqi} disabled={triggered} className="gap-2">
-              <Zap className="h-4 w-4" /> AQI Spike
-            </Button>
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
-          {triggered && (
-            <Button variant="ghost" onClick={reset} className="w-full text-sm text-muted-foreground">
-              Reset Simulation
-            </Button>
-          )}
-        </div>
+        ) : triggers && triggers.length > 0 ? (
+          <div className="space-y-3">
+            {triggers.map((trigger, index) => {
+              const IconComponent = triggerIcons[trigger.trigger_type] || AlertCircle;
+              const colorClass = triggerColors[trigger.trigger_type] || "bg-gray-500/20 text-gray-600";
+
+              return (
+                <motion.div
+                  key={trigger.id}
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: index * 0.05 }}
+                  className="glass-card p-4"
+                >
+                  <div className="flex items-start gap-3 mb-3">
+                    <div className={`rounded-lg p-2.5 ${colorClass}`}>
+                      <IconComponent className="h-5 w-5" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="font-display font-semibold">{getTriggerLabel(trigger.trigger_type)}</p>
+                        <span className="rounded-full bg-warning/15 px-2.5 py-0.5 text-xs font-semibold text-warning">
+                          {trigger.status}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Zone: {trigger.affected_zone.split("_").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 mb-3 text-sm">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Measured Value</p>
+                      <p className="font-semibold">{trigger.measured_value}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Threshold</p>
+                      <p className="font-semibold">{trigger.threshold_value}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Severity</p>
+                      <p className="font-semibold">{trigger.severity_pct}%</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Payout Multiplier</p>
+                      <p className="font-semibold text-success">×{trigger.payout_multiplier}</p>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-border pt-2">
+                    <p className="text-xs text-muted-foreground">
+                      Detected: {new Date(trigger.created_at).toLocaleDateString()} {new Date(trigger.created_at).toLocaleTimeString()}
+                    </p>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="glass-card p-8 text-center">
+            <Cloud className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-50" />
+            <p className="text-sm text-muted-foreground">No active alerts</p>
+            <p className="text-xs text-muted-foreground mt-1">When environmental events are detected, they will appear here</p>
+          </div>
+        )}
+
+        {/* Alert Info */}
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          className="glass-card p-4"
+        >
+          <h3 className="font-display font-semibold mb-2">How it works</h3>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            We monitor environmental events in your work zone. When severe conditions are detected (heavy rain, extreme heat, high air pollution, etc.), payouts are automatically triggered through parametric insurance — no claim form needed.
+          </p>
+        </motion.div>
       </div>
     </AppShell>
   );
