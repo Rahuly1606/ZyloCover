@@ -11,6 +11,10 @@ import time
 import asyncio
 from contextlib import asynccontextmanager
 import datetime
+from dotenv import load_dotenv
+
+# ── Load environment variables ─────────────────────────────────────────────
+load_dotenv()
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -83,7 +87,8 @@ app = FastAPI(
 
 # ── CORS ──────────────────────────────────────────────────────────────────
 # Development: allow all | Production: restrict to frontend domain
-allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000").split(",")
+allowed_origins = [url.strip() for url in os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000").split(",")]
+logger.info(f"CORS allowed origins: {allowed_origins}")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
