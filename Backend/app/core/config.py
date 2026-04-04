@@ -12,9 +12,9 @@ class Settings(BaseSettings):
     """Application Settings from .env"""
 
     # ── Database ────────────────────────────────────────────────────────
-    # Aiven MySQL (development): avnadmin:AVNS_rOnElif_Zt3IhpWU2Y1@mysql-21d912cf-csitelge-ca54.c.aivencloud.com:19240/defaultdb
-    # Local MySQL (optional): mysql+pymysql://root:Rahul%401606@localhost:3306/zylocover
-    DATABASE_URL: str = "mysql+pymysql://avnadmin:AVNS_rOnElif_Zt3IhpWU2Y1@mysql-21d912cf-csitelge-ca54.c.aivencloud.com:19240/defaultdb"
+    # Set DATABASE_URL in your .env file
+    # Example: mysql+pymysql://user:password@host:port/database
+    DATABASE_URL: str = ""
 
     # ── JWT & Security ──────────────────────────────────────────────────
     SECRET_KEY: str = "your-secret-key-change-this-in-production-32-chars-min"
