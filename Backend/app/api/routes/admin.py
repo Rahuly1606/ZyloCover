@@ -193,16 +193,16 @@ async def get_analytics_dashboard(
     # ─── LOSS RATIO BY CITY ──────────────────────────────────────────────────
     
     loss_ratio_by_city = {}
-    cities = db.query(Policy.city).distinct().all()
+    cities = db.query(User.city).distinct().all()
     for (city,) in cities:
         if not city:
             continue
-        city_premiums = db.query(Policy).filter(
-            and_(Policy.city == city, Policy.created_at >= week_start)
+        city_premiums = db.query(Policy).join(User).filter(
+            and_(User.city == city, Policy.created_at >= week_start)
         ).with_entities(func.sum(Policy.weekly_premium)).scalar() or 0.0
         
-        city_claims = db.query(Claim).join(Policy).filter(
-            and_(Policy.city == city, Claim.created_at >= week_start)
+        city_claims = db.query(Claim).join(Policy).join(User).filter(
+            and_(User.city == city, Claim.created_at >= week_start)
         )
         city_payouts = db.query(Payout).join(Claim, Payout.claim_id == Claim.id).filter(
             and_(Claim.created_at >= week_start, Payout.status == "success")

@@ -216,7 +216,7 @@ class AutomationEngine:
                     # Find eligible policies and process claims
                     now = datetime.utcnow()
                     eligible_policies = db.query(Policy).join(User).filter(
-                        Policy.city == city,
+                        User.city == city,
                         Policy.status == PolicyStatus.ACTIVE,
                         Policy.end_date > now,
                         User.is_blacklisted == False
@@ -254,6 +254,7 @@ class AutomationEngine:
         try:
             from app.db.session import SessionLocal
             from app.models.policy import Policy, PolicyStatus
+            from app.models.user import User
             from app.models.claim import Claim
             from app.models.payout import Payout, PayoutStatus
             from sqlalchemy import func, and_
@@ -278,21 +279,23 @@ class AutomationEngine:
             # Calculate loss ratios by city
             week_start = now - timedelta(days=7)
             
-            cities = db.query(Policy.city).distinct().all()
+            cities = db.query(User.city).distinct().all()
             for (city,) in cities:
                 if not city:
                     continue
                 
-                city_premiums = db.query(Policy).filter(
-                    and_(Policy.city == city, Policy.created_at >= week_start)
+                city_premiums = db.query(Policy).join(User).filter(
+                    and_(User.city == city, Policy.created_at >= week_start)
                 ).with_entities(func.sum(Policy.weekly_premium)).scalar() or 0.0
                 
                 city_payouts = db.query(Payout).join(
                     Claim, Payout.claim_id == Claim.id
                 ).join(
                     Policy, Claim.policy_id == Policy.id
+                ).join(
+                    User, Policy.user_id == User.id
                 ).filter(
-                    and_(Policy.city == city, Payout.status == PayoutStatus.SUCCESS,
+                    and_(User.city == city, Payout.status == PayoutStatus.SUCCESS,
                          Payout.completed_at >= week_start)
                 ).with_entities(func.sum(Payout.amount_inr)).scalar() or 0.0
                 
