@@ -173,6 +173,49 @@ Once the backend is running:
    - Monitor the terminal for ERROR or WARNING messages
    - Look for scheduler job execution logs
 
+## Deployment to Render
+
+The `Procfile` file handles deployment configuration automatically:
+
+```
+web: python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT
+```
+
+**Key Points:**
+- `--host 0.0.0.0` - Binds to all network interfaces (required for external access)
+- `--port $PORT` - Uses Render's environment variable for dynamic port assignment
+- Render detects and uses this automatically
+
+**Deployment Steps:**
+
+1. **Ensure Procfile exists** in Backend directory ✅
+2. **Set environment variables on Render:**
+   - `DATABASE_URL=mysql+aiomysql://user:pass@host/zylocover`
+   - `OPENWEATHER_API_KEY=...`
+   - `WAQI_API_KEY=...`
+3. **Push to GitHub:**
+   ```bash
+   git add Backend/Procfile Backend/requirements.txt Backend/setup.sh
+   git commit -m "fix: deployment configuration"
+   git push origin master
+   ```
+4. **Render automatically redeploys** (~2-3 minutes)
+5. **Verify:**
+   - Check deployment logs for "Uvicorn running on http://0.0.0.0:PORT"
+   - Visit `https://<your-service>.onrender.com/docs`
+   - Test login with demo credentials
+
+**Troubleshooting Render Deployment:**
+
+| Issue | Solution |
+|-------|----------|
+| "No open ports detected" | Ensure Procfile has `--host 0.0.0.0` ✅ Fixed |
+| Health check timeout | Check logs for startup errors, verify DATABASE_URL |
+| Module not found error | All 62 dependencies have explicit versions ✅ |
+| Database connection error | Verify DATABASE_URL matches Aiven credentials |
+
+---
+
 ## Getting Help
 
 If you encounter issues:
