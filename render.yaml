@@ -1,0 +1,41 @@
+services:
+  - type: web
+    name: zylocover-backend
+    runtime: python
+    rootDir: Backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    autoDeploy: true
+    envVars:
+      - key: ENV
+        value: production
+      - key: LOG_LEVEL
+        value: INFO
+      - key: USE_MOCK_ENV_DATA
+        value: "True"
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "1440"
+      - key: ALGORITHM
+        value: HS256
+      - key: MIN_PREMIUM_INR
+        value: "49"
+      - key: MAX_PREMIUM_INR
+        value: "299"
+      - key: GST_RATE
+        value: "0.18"
+      - key: RAIN_TRIGGER_MM
+        value: "50"
+      - key: TEMP_TRIGGER_C
+        value: "42"
+      - key: AQI_TRIGGER
+        value: "300"
+      - key: WIND_TRIGGER_KMPH
+        value: "60"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ADMIN_API_KEY
+        generateValue: true
+      # Set this in Render to your production MySQL URI, e.g.:
+      # mysql+pymysql://user:password@host:3306/zylocover
+      - key: DATABASE_URL
+        sync: false
