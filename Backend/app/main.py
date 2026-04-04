@@ -1,14 +1,17 @@
 """
 RaahPay — AI-Powered Parametric Income Insurance for Gig Workers
 ================================================================
-FastAPI application entry point.
+FastAPI application entry point - Optimized for Render deployment
 """
 
 import logging
 import time
+import asyncio
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+import datetime
 
 from app.api.routes import auth, user, policy, pricing, trigger, claims, admin, payout
 from app.engine.scheduler import automation_engine
@@ -19,6 +22,52 @@ logging.basicConfig(
     format="%(asctime)s [%(name)s] %(levelname)s - %(message)s"
 )
 logger = logging.getLogger("raahpay")
+
+# ── Global startup state ──────────────────────────────────────────────────
+startup_complete = False
+initialization_task = None
+
+
+# ── Async lifespan for non-blocking startup ──────────────────────────────
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """FastAPI lifespan - non-blocking startup"""
+    global startup_complete, initialization_task
+    
+    logger.info("🚀 RaahPay starting up...")
+    
+    # Background initialization (non-blocking)
+    async def background_init():
+        global startup_complete
+        try:
+            # Initialize database
+            logger.info("Initializing database...")
+            init_db()
+            logger.info("✅ Database initialization complete")
+            
+            # Start scheduler
+            logger.info("Starting automation engine...")
+            automation_engine.start()
+            logger.info("✅ RaahPay Automation Engine started")
+            logger.info("✅ RaahPay is live — automation engine running")
+            
+        except Exception as e:
+            logger.warning(f"⚠️  Startup warning: {e}")
+        finally:
+            startup_complete = True
+    
+    # Start background task
+    initialization_task = asyncio.create_task(background_init())
+    
+    yield
+    
+    # Shutdown
+    try:
+        automation_engine.shutdown()
+        logger.info("👋 RaahPay shutting down gracefully")
+    except Exception as e:
+        logger.error(f"Shutdown error: {e}")
+
 
 app = FastAPI(
     title="RaahPay API",
@@ -41,16 +90,18 @@ Covers hours of work lost due to external disruptions — NOT health, accidents,
 All policies run for exactly 7 days. Premium and coverage reset each week.
 
 ### Demo Credentials:
-- Email: ravi@demo.com | Password: Demo1234!
-- Email: priya@demo.com | Password: Demo1234!
-- Email: amit@demo.com | Password: Demo1234!
+- Email: demo@zylocover.com | Password: Demo1234!
+- Email: priya@demo.zylocover.com | Password: Demo1234!
+- Email: arjun@demo.zylocover.com | Password: Demo1234!
+- Email: kavya@demo.zylocover.com | Password: Demo1234!
     """,
     version="2.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
+    lifespan=lifespan,
 )
 
-# ── CORS ──────────────────────────────────────────────────────────────────────
+# ── CORS ──────────────────────────────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -60,7 +111,7 @@ app.add_middleware(
 )
 
 
-# ── Request timing middleware ─────────────────────────────────────────────────
+# ── Request timing middleware ─────────────────────────────────────────────
 @app.middleware("http")
 async def add_process_time(request: Request, call_next):
     start = time.time()
@@ -69,7 +120,7 @@ async def add_process_time(request: Request, call_next):
     return response
 
 
-# ── Global exception handler ──────────────────────────────────────────────────
+# ── Global exception handler ──────────────────────────────────────────────
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     logger.error(f"Unhandled exception: {exc}", exc_info=True)
@@ -79,7 +130,7 @@ async def global_exception_handler(request: Request, exc: Exception):
     )
 
 
-# ── Routers ───────────────────────────────────────────────────────────────────
+# ── Routers ───────────────────────────────────────────────────────────────
 app.include_router(auth.router)
 app.include_router(user.router)
 app.include_router(policy.router)
@@ -90,46 +141,45 @@ app.include_router(payout.router)
 app.include_router(admin.router)
 
 
-# ── Lifecycle ─────────────────────────────────────────────────────────────────
-@app.on_event("startup")
-async def startup():
-    logger.info("🚀 RaahPay starting up...")
-    try:
-        init_db()
-        automation_engine.start()
-        logger.info("✅ RaahPay is live — automation engine running")
-    except Exception as e:
-        logger.warning(f"⚠️  Startup warning: {e}")
-
-
-@app.on_event("shutdown")
-async def shutdown():
-    automation_engine.shutdown()
-    logger.info("👋 RaahPay shutting down gracefully")
-
-
-# ── Health & Root ─────────────────────────────────────────────────────────────
+# ── Health & Root ─────────────────────────────────────────────────────────
 @app.get("/", tags=["Health"])
-def root():
+async def root():
+    """Root health check - returns immediately for Render health probe"""
     return {
         "service": "RaahPay",
-        "tagline": "Parametric Income Insurance for India's Gig Workers",
-        "version": "2.0.0",
         "status": "operational",
-        "docs": "/docs",
-        "pipeline": "Auth → User → Policy → Pricing → Trigger → Fraud → Claim → Payout",
-        "coverage": "Loss of Income ONLY — Hyderabad Gig Workers",
-        "policy_model": "Weekly (7 days)",
+        "version": "2.0.0",
     }
 
 
 @app.get("/health", tags=["Health"])
-def health():
+async def health():
+    """Health check - returns startup progress"""
     return {
         "status": "healthy",
-        "automation_engine": "running",
+        "startup_complete": startup_complete,
+        "automation_engine": "running" if startup_complete else "initializing",
         "database": "connected",
-        "timestamp": __import__('datetime').datetime.utcnow().isoformat(),
+        "timestamp": datetime.datetime.utcnow().isoformat(),
+    }
+
+
+@app.get("/ready", tags=["Health"])
+async def ready():
+    """Readiness probe - returns 503 until fully initialized"""
+    global startup_complete
+    if not startup_complete:
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "initializing",
+                "message": "Application is starting up, please retry in a moment"
+            }
+        )
+    return {
+        "status": "ready",
+        "service": "RaahPay",
+        "version": "2.0.0",
     }
 
 
