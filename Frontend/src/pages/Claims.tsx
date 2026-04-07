@@ -10,7 +10,8 @@ interface Claim {
   id: number
   trigger_type: string
   status: string
-  claimed_amount: number
+  gross_payout_inr: number
+  net_payout_inr: number
   created_at: string
 }
 
@@ -25,12 +26,13 @@ export const Claims = () => {
     const fetchData = async () => {
       try {
         const claimsResult = await claimsService.getClaims(1, 50)
-        setClaims(claimsResult?.data || [])
+        const claimsList = Array.isArray(claimsResult) ? claimsResult : claimsResult?.data || []
+        setClaims(claimsList)
         setStats({
-          total: claimsResult?.data?.length || 0,
-          approved: claimsResult?.data?.filter((c: any) => c.status === 'approved').length || 0,
-          flagged: claimsResult?.data?.filter((c: any) => c.status === 'flagged').length || 0,
-          total_claimed: claimsResult?.data?.reduce((sum: number, c: any) => sum + (c.claimed_amount || 0), 0) || 0,
+          total: claimsList.length || 0,
+          approved: claimsList.filter((c: any) => c.status === 'approved').length || 0,
+          flagged: claimsList.filter((c: any) => c.status === 'flagged').length || 0,
+          total_claimed: claimsList.reduce((sum: number, c: any) => sum + (c.gross_payout_inr || 0), 0) || 0,
         })
       } catch (err) {
         console.error('Failed to load claims:', err)
@@ -99,11 +101,10 @@ export const Claims = () => {
               <button
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`px-3 py-1.5 rounded-full text-sm font-semibold transition-colors ${
-                  filter === f
+                className={`px-3 py-1.5 rounded-full text-sm font-semibold transition-colors ${filter === f
                     ? 'bg-purple-600 text-white'
                     : 'bg-white text-slate-700 border border-purple-200 hover:bg-purple-50'
-                }`}
+                  }`}
               >
                 {f.charAt(0).toUpperCase() + f.slice(1)}
               </button>
@@ -131,7 +132,7 @@ export const Claims = () => {
                   </div>
                   <div className="flex items-center justify-between mt-2">
                     <p className="text-xs text-muted-foreground">{formatters.dateTime(claim.created_at)}</p>
-                    <p className="text-sm font-bold text-purple-700">{formatters.currency(claim.claimed_amount)}</p>
+                    <p className="text-sm font-bold text-purple-700">{formatters.currency(claim.gross_payout_inr)}</p>
                   </div>
                 </button>
               ))}

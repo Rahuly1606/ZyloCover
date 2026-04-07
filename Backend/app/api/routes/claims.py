@@ -33,6 +33,16 @@ async def get_claims(
     claims = db.query(Claim).filter(
         Claim.user_id == user_id
     ).order_by(Claim.created_at.desc()).all()
+    
+    # Populate trigger_type from trigger_event if not set
+    for claim in claims:
+        if not claim.trigger_type and claim.trigger_event_id:
+            trigger = db.query(TriggerEvent).filter(
+                TriggerEvent.id == claim.trigger_event_id
+            ).first()
+            if trigger:
+                claim.trigger_type = trigger.trigger_type
+    
     return claims
 
 

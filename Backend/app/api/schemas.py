@@ -150,6 +150,7 @@ class ClaimResponse(BaseModel):
     user_id: int
     policy_id: int
     trigger_event_id: int
+    trigger_type: str  # RAIN, HEAT, AQI, WIND
     status: str
     hours_lost: float
     gross_payout_inr: float
