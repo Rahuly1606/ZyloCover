@@ -155,7 +155,7 @@ class ClaimResponse(BaseModel):
     gross_payout_inr: float
     net_payout_inr: float
     fraud_score: float
-    fraud_flags: Optional[List[str]]
+    fraud_flags: Optional[List[Dict[str, Any]]]
     severity_band: str
     severity_multiplier: float
     created_at: datetime
