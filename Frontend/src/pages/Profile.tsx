@@ -573,23 +573,23 @@ export const Profile = () => {
             <Navigation className="h-5 w-5 text-purple-600" />
             Current Location
           </h3>
-          {user.base_address || (user.base_latitude && user.base_longitude) ? (
+          {user.address || (user.latitude && user.longitude) ? (
             <div className="p-4 bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg border border-blue-200 space-y-3">
-              {user.base_address && (
+              {user.address && (
                 <div>
                   <p className="text-xs text-muted-foreground mb-1">Address</p>
-                  <p className="text-sm font-semibold text-slate-900">{user.base_address}</p>
+                  <p className="text-sm font-semibold text-slate-900">{user.address}</p>
                 </div>
               )}
-              {user.base_latitude && user.base_longitude && (
+              {user.latitude && user.longitude && (
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <p className="text-xs text-muted-foreground">Latitude</p>
-                    <p className="text-xs font-mono text-slate-700">{user.base_latitude.toFixed(4)}</p>
+                    <p className="text-xs font-mono text-slate-700">{user.latitude.toFixed(4)}</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Longitude</p>
-                    <p className="text-xs font-mono text-slate-700">{user.base_longitude.toFixed(4)}</p>
+                    <p className="text-xs font-mono text-slate-700">{user.longitude.toFixed(4)}</p>
                   </div>
                 </div>
               )}

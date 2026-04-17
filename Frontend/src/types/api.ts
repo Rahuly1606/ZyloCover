@@ -40,6 +40,9 @@ export interface User {
     avg_daily_income: number
     avg_daily_hours: number
     experience_months: number
+    latitude?: number       // Current GPS coordinates (mapped from base_latitude)
+    longitude?: number      // Current GPS coordinates (mapped from base_longitude)
+    address?: string        // Reverse geocoded address (mapped from base_address)
     base_latitude?: number       // Current GPS coordinates
     base_longitude?: number      // Current GPS coordinates
     base_address?: string        // Reverse geocoded address
