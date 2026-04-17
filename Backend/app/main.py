@@ -93,24 +93,25 @@ app = FastAPI(
 )
 
 # ── CORS ──────────────────────────────────────────────────────────────────
-# CRITICAL: Allow all origins by default for deployment
-default_origins = "*"
-allowed_origins_str = os.getenv("ALLOWED_ORIGINS", default_origins)
+# CRITICAL: Configure CORS for production deployment
+allowed_origins_str = os.getenv("ALLOWED_ORIGINS", "https://zylo-cover.vercel.app")
 
 logger.info(f"CORS Configuration: {allowed_origins_str}")
 
 # Parse origins
 if allowed_origins_str == "*":
-    logger.warning("⚠️ CORS: Allowing ALL origins")
+    logger.warning("⚠️ CORS: Allowing ALL origins (credentials disabled)")
     allowed_origins = ["*"]
+    allow_credentials = False
 else:
     allowed_origins = [url.strip() for url in allowed_origins_str.split(",")]
+    allow_credentials = True
     logger.info(f"CORS: Specific origins: {allowed_origins}")
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
-    allow_credentials=True,
+    allow_credentials=allow_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["*"],
