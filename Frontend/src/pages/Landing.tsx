@@ -1,11 +1,13 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Check, ArrowRight, Shield, Zap, Clock } from 'lucide-react'
+import { Check, ArrowRight, Shield, Zap, Clock, LayoutDashboard } from 'lucide-react'
 import { Navbar } from '@/components/layout/Navbar'
 import { Button } from '@/components/ui/button'
+import { useAuth } from '@/contexts/AuthContext'
 
 export const Landing = () => {
+  const { isAdmin, adminToken } = useAuth()
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -66,17 +68,33 @@ export const Landing = () => {
             variants={itemVariants}
             className="flex flex-col sm:flex-row gap-3 justify-center pt-4"
           >
-            <Link to="/onboarding">
-              <Button className="gap-2 w-full sm:w-auto">
-                Get Started
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
-            <Link to="/login">
-              <Button variant="secondary" className="w-full sm:w-auto">
-                I have an account
-              </Button>
-            </Link>
+            {isAdmin && adminToken ? (
+              <Link to="/admin">
+                <Button className="gap-2 w-full sm:w-auto">
+                  <LayoutDashboard className="h-4 w-4" />
+                  Go to Admin Dashboard
+                </Button>
+              </Link>
+            ) : (
+              <>
+                <Link to="/onboarding">
+                  <Button className="gap-2 w-full sm:w-auto">
+                    Get Started
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
+                <Link to="/login">
+                  <Button variant="secondary" className="w-full sm:w-auto">
+                    I have an account
+                  </Button>
+                </Link>
+                <Link to="/admin-login">
+                  <Button variant="outline" className="w-full sm:w-auto border-purple-300">
+                    Admin Login
+                  </Button>
+                </Link>
+              </>
+            )}
           </motion.div>
 
           {/* Trust Badges */}

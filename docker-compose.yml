@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  # MySQL Database
+  db:
+    image: mysql:8.0
+    container_name: zylocover-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: zylocover
+      MYSQL_USER: zylocover_user
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-zylocover123}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Unified Backend (includes AI service)
+  backend:
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile
+    container_name: zylocover-backend
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      ENV: production
+      DATABASE_URL: mysql+pymysql://zylocover_user:${MYSQL_PASSWORD:-zylocover123}@db:3306/zylocover
+      SECRET_KEY: ${SECRET_KEY:-change-this-secret-key-in-production-min-32-chars}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:5173,http://localhost:3000}
+      OPENWEATHER_API_KEY: ${OPENWEATHER_API_KEY}
+      AQI_API_KEY: ${AQI_API_KEY}
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
+      RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID}
+      RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET}
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "check_health.py"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Frontend (optional - for full stack deployment)
+  frontend:
+    build:
+      context: ./Frontend
+      dockerfile: Dockerfile
+    container_name: zylocover-frontend
+    restart: always
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_URL: http://localhost:8000
+    depends_on:
+      - backend
+
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  default:
+    name: zylocover-network

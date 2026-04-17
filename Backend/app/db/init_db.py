@@ -46,6 +46,14 @@ def apply_migrations():
                 ("is_admin", "ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT FALSE"),
                 ("is_fraud_flagged", "ALTER TABLE users ADD COLUMN is_fraud_flagged BOOLEAN DEFAULT FALSE"),
                 ("fraud_flag_reason", "ALTER TABLE users ADD COLUMN fraud_flag_reason VARCHAR(500) NULL"),
+                ("employee_id", "ALTER TABLE users ADD COLUMN employee_id VARCHAR(50) NULL"),
+                ("job_proof_image", "ALTER TABLE users ADD COLUMN job_proof_image VARCHAR(500) NULL"),
+                ("job_verification_status", "ALTER TABLE users ADD COLUMN job_verification_status VARCHAR(20) DEFAULT 'pending'"),
+                ("job_verified_at", "ALTER TABLE users ADD COLUMN job_verified_at DATETIME NULL"),
+                ("registered_latitude", "ALTER TABLE users ADD COLUMN registered_latitude FLOAT NULL"),
+                ("registered_longitude", "ALTER TABLE users ADD COLUMN registered_longitude FLOAT NULL"),
+                ("registered_address", "ALTER TABLE users ADD COLUMN registered_address VARCHAR(255) NULL"),
+                ("registered_at", "ALTER TABLE users ADD COLUMN registered_at DATETIME NULL"),
             ]
             
             logger.info("Migrating users table...")
@@ -107,6 +115,10 @@ def apply_migrations():
                 ("trigger_measured_value", "ALTER TABLE claims ADD COLUMN trigger_measured_value FLOAT NULL"),
                 ("trigger_type", "ALTER TABLE claims ADD COLUMN trigger_type VARCHAR(50) NULL"),
                 ("payout_multiplier", "ALTER TABLE claims ADD COLUMN payout_multiplier FLOAT DEFAULT 1.0"),
+                ("claim_latitude", "ALTER TABLE claims ADD COLUMN claim_latitude FLOAT NULL"),
+                ("claim_longitude", "ALTER TABLE claims ADD COLUMN claim_longitude FLOAT NULL"),
+                ("location_distance_km", "ALTER TABLE claims ADD COLUMN location_distance_km FLOAT NULL"),
+                ("location_mismatch_flag", "ALTER TABLE claims ADD COLUMN location_mismatch_flag VARCHAR(50) NULL"),
             ]
             
             logger.info("Migrating claims table...")

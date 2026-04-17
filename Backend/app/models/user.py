@@ -47,16 +47,28 @@ class User(Base):
     work_zone = Column(SQLEnum(WorkZone), nullable=False)
     city = Column(String(100), nullable=False, server_default="Hyderabad")
     
+    # Employee & Job Verification
+    employee_id = Column(String(50), nullable=False, unique=True, index=True)
+    job_proof_image = Column(String(500), nullable=True)  # URL to uploaded proof image
+    job_verification_status = Column(String(20), default="pending")  # pending/approved/rejected
+    job_verified_at = Column(DateTime(timezone=True), nullable=True)
+    
     # Income Profile
     avg_daily_income = Column(Float, nullable=False)  # ₹
     avg_daily_hours = Column(Float, nullable=False)
     experience_months = Column(Integer, nullable=False, server_default="0")
     
-    # Location
+    # Location - Base/Current Location
     base_latitude = Column(Float, nullable=True)
     base_longitude = Column(Float, nullable=True)
     base_address = Column(String(255), nullable=True)
     last_gps_update = Column(DateTime(timezone=True), nullable=True)
+    
+    # Location - Registered Location (at signup)
+    registered_latitude = Column(Float, nullable=True)  # Initial signup location
+    registered_longitude = Column(Float, nullable=True)  # Initial signup location
+    registered_address = Column(String(255), nullable=True)  # Initial signup location
+    registered_at = Column(DateTime(timezone=True), nullable=True)  # When location was registered
     
     # Risk & Fraud Scoring
     all_time_claim_count = Column(Integer, default=0)
@@ -64,9 +76,12 @@ class User(Base):
     is_blacklisted = Column(Boolean, default=False)  # After 3+ fraud flags
     user_risk_score = Column(Float, default=0.0)  # 0-100, updated by fraud engine
     
+    # Admin Credentials
+    is_admin = Column(Boolean, nullable=False, server_default="0")
+    admin_credential = Column(String(255), nullable=True)  # Unique admin credential/secret key
+    
     # Flags
     is_active = Column(Boolean, nullable=False, server_default="1")
-    is_admin = Column(Boolean, nullable=False, server_default="0")
     is_fraud_flagged = Column(Boolean, nullable=False, server_default="0")
     fraud_flag_reason = Column(String(500), nullable=True)
     

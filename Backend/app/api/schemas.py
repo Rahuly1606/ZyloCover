@@ -144,7 +144,7 @@ class PolicyResponse(BaseModel):
 # ─── CLAIM PROCESSING ───────────────────────────────────────────────────────
 
 class ClaimResponse(BaseModel):
-    """Claim details with fraud scoring"""
+    """Claim details with fraud scoring and location data"""
     id: int
     claim_number: str
     user_id: int
@@ -159,6 +159,11 @@ class ClaimResponse(BaseModel):
     fraud_flags: Optional[List[Dict[str, Any]]]
     severity_band: str
     severity_multiplier: float
+    # Location fields
+    claim_latitude: Optional[float] = None
+    claim_longitude: Optional[float] = None
+    location_distance_km: Optional[float] = None
+    location_mismatch_flag: Optional[str] = None
     created_at: datetime
     
     class Config:
@@ -166,7 +171,7 @@ class ClaimResponse(BaseModel):
 
 
 class ClaimWithFraudAuditResponse(BaseModel):
-    """Claim with detailed fraud audit trail"""
+    """Claim with detailed fraud audit trail and location analysis"""
     id: int
     claim_number: str
     status: str
@@ -175,7 +180,28 @@ class ClaimWithFraudAuditResponse(BaseModel):
     fraud_layers: List[Dict[str, Any]]
     gross_payout_inr: float
     net_payout_inr: float
+    # Location data
+    claim_latitude: Optional[float] = None
+    claim_longitude: Optional[float] = None
+    location_distance_km: Optional[float] = None
+    location_mismatch_flag: Optional[str] = None
     audit_trail: Dict[str, Any]
+
+
+class ClaimSubmissionRequest(BaseModel):
+    """Request to submit a claim with location data"""
+    trigger_id: int = Field(description="Trigger event ID that triggered the claim")
+    claim_latitude: Optional[float] = Field(None, ge=-90, le=90, description="User's current latitude")
+    claim_longitude: Optional[float] = Field(None, ge=-180, le=180, description="User's current longitude")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "trigger_id": 123,
+                "claim_latitude": 19.0760,
+                "claim_longitude": 72.8777
+            }
+        }
 
 
 # ─── PAYOUT PROCESSING ──────────────────────────────────────────────────────

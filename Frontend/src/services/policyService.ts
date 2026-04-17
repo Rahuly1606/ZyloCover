@@ -1,18 +1,27 @@
-import API from './api'
+import { apiClient } from '../api/client'
+
+interface PolicyData {
+  id: number
+  coverage_tier: string
+  premium_amount: number
+  status: string
+  valid_till: string
+  created_at: string
+}
 
 export const policyService = {
-  createPolicy: (coverage_tier: string) => 
-    API.post('/policy/create', { coverage_tier }),
+  createPolicy: (coverage_tier: string) =>
+    apiClient.post<PolicyData>('/policy/create', { coverage_tier }),
 
-  getActive: () => 
-    API.get('/policy/active'),
+  getActive: () =>
+    apiClient.get<PolicyData | null>('/policy/active'),
 
-  getHistory: (page = 1, size = 20) => 
-    API.get('/policy/list/all'),
+  getHistory: (page = 1, size = 20) =>
+    apiClient.get<PolicyData[]>('/policy/list/all'),
 
-  getById: (id: number) => 
-    API.get(`/policy/${id}`),
+  getById: (id: number) =>
+    apiClient.get<PolicyData>(`/policy/${id}`),
 
   renew: (policyId: number, coverage_tier: string) =>
-    API.post('/policy/create', { coverage_tier })
+    apiClient.post<PolicyData>('/policy/create', { coverage_tier })
 }

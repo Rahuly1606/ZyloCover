@@ -1,15 +1,21 @@
-import API from './api'
+import { apiClient } from '../api/client'
+
+interface PricingData {
+  weekly_premium: number
+  max_payout: number
+  [key: string]: any
+}
 
 export const pricingService = {
-  calculate: (coverage_tier: string) => 
-    API.post('/pricing/calculate', { coverage_tier }),
+  calculate: (coverage_tier: string) =>
+    apiClient.post<PricingData>('/pricing/calculate', { coverage_tier }),
 
   calculatePricing: () =>
-    API.post('/pricing/calculate', {}),
+    apiClient.post<PricingData>('/pricing/calculate', {}),
 
-  getTiers: () => 
-    API.get('/pricing/coverage-tiers'),
+  getTiers: () =>
+    apiClient.get<any>('/pricing/coverage-tiers'),
 
   getPremiumBreakdown: (coverage_tier: string) =>
-    API.post('/pricing/calculate', { coverage_tier })
+    apiClient.post<PricingData>('/pricing/calculate', { coverage_tier })
 }

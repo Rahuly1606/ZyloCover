@@ -14,7 +14,11 @@ from app.models.policy import Policy, PolicyStatus
 from app.models.trigger import TriggerEvent, TriggerType, TriggerStatus
 from app.models.claim import Claim, ClaimStatus
 from app.models.payout import Payout, PayoutStatus
-from app.core.security import hash_password
+from app.core.security import (
+    hash_password,
+    generate_admin_credential,
+    hash_admin_credential
+)
 
 logger = logging.getLogger("raahpay.seed")
 
@@ -128,7 +132,10 @@ def seed_demo_data():
         db.commit()
         logger.info(f"✅ Created {len(users)} demo users")
         
-        # Create admin user
+        # Create admin user with credential
+        admin_credential = generate_admin_credential()
+        hashed_credential = hash_admin_credential(admin_credential)
+        
         admin_user = User(
             name=ADMIN_USER["name"],
             email=ADMIN_USER["email"],
@@ -143,10 +150,14 @@ def seed_demo_data():
             base_longitude=ADMIN_USER["base_longitude"],
             is_active=True,
             is_admin=True,
+            admin_credential=hashed_credential,
         )
         db.add(admin_user)
         db.commit()
         logger.info("✅ Created admin user")
+        logger.info(f"   📧 Email: {ADMIN_USER['email']}")
+        logger.info(f"   🔑 Password: {ADMIN_USER['password']}")
+        logger.info(f"   🔐 Credential: {admin_credential}")
         
         # Create sample active policies
         now = datetime.utcnow()

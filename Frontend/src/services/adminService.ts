@@ -1,51 +1,193 @@
-import API from './api'
+import { apiClient } from '../api/client'
+
+interface AdminStats {
+  total_workers: number
+  active_policies: number
+  total_claims: number
+  total_payouts: number
+  claims_pending: number
+  flagged_claims: number
+  loss_ratio: number
+  avg_processing_time: number
+}
+
+interface ClaimAlert {
+  id: number
+  claim_id: number
+  type: string
+  risk_level: string
+  created_at: string
+}
+
+interface AuditLog {
+  id: number
+  action: string
+  entity_type: string
+  entity_id: number
+  user_id: number
+  old_value?: string
+  new_value?: string
+  created_at: string
+}
+
+interface FlaggedClaim {
+  id: number
+  claim_id: number
+  policy_id: number
+  fraud_score: number
+  risk_level: string
+  flags: string[]
+  created_at: string
+  status: string
+}
 
 export const adminService = {
-  getDashboard: () => 
-    API.get('/admin/dashboard'),
+  // ═══════════════════════════════════════════════════════════════════
+  // ANALYTICS & DASHBOARD
+  // ═══════════════════════════════════════════════════════════════════
 
-  getAnalytics: () => 
-    API.get('/admin/analytics'),
+  getDashboard: () =>
+    apiClient.get<any>('/admin/dashboard'),
 
-  getPolicies: (filters: any = {}) => 
-    API.get('/admin/analytics', { params: filters }),
+  getAnalytics: () =>
+    apiClient.get<any>('/admin/analytics'),
 
-  getClaims: (filters: any = {}) => 
-    API.get('/admin/analytics', { params: filters }),
+  getForecast: () =>
+    apiClient.get<any>('/admin/forecast'),
 
-  getFraudQueue: (page = 1, size = 20) => 
-    API.get('/admin/analytics', { params: { page, size } }),
+  // ═══════════════════════════════════════════════════════════════════
+  // FRAUD QUEUE MANAGEMENT
+  // ═══════════════════════════════════════════════════════════════════
 
-  reviewClaim: (claimId: number, action: string, notes: string) => 
-    API.put(`/admin/claims/${claimId}/review`, { action, notes }),
+  getFlaggedClaims: (page = 1, size = 20, riskLevel?: string) =>
+    apiClient.get<FlaggedClaim[]>('/admin/fraud-queue',
+      { page, size, ...(riskLevel && { risk_level: riskLevel }) }
+    ),
 
-  simulateTrigger: (data: any) => 
-    API.post('/admin/trigger/simulate', data),
+  approveFlaggedClaim: (claimId: number, notes?: string) =>
+    apiClient.put(`/admin/fraud-queue/${claimId}/approve`, { notes }),
 
-  getLossRatio: () => 
-    API.get('/admin/analytics'),
+  rejectFlaggedClaim: (claimId: number, notes?: string) =>
+    apiClient.put(`/admin/fraud-queue/${claimId}/reject`, { notes }),
 
-  getRiskHeatmap: () => 
-    API.get('/admin/analytics'),
+  // ═══════════════════════════════════════════════════════════════════
+  // USER APPROVAL & VERIFICATION
+  // ═══════════════════════════════════════════════════════════════════
 
-  getAuditLog: (page = 1, size = 20) =>
-    API.get('/admin/analytics', { params: { page, size } }),
+  getPendingApprovals: (page = 1, size = 20) =>
+    apiClient.get('/admin/pending-approvals', { page, size }),
 
-  getFlaggedClaims: (page = 1, size = 20) =>
-    API.get('/admin/fraud-queue', { params: { page, size } }),
+  getUserFullProfile: (userId: number) =>
+    apiClient.get(`/admin/users/${userId}/full-profile`),
 
-  approveFlaggedClaim: (claimId: number) =>
-    API.put(`/admin/fraud-queue/${claimId}/approve`),
+  approveUserVerification: (userId: number, decision: 'approve' | 'reject', notes?: string) =>
+    apiClient.put(`/admin/users/${userId}/approve-verification`, { decision, notes }),
 
-  rejectFlaggedClaim: (claimId: number) =>
-    API.put(`/admin/fraud-queue/${claimId}/reject`),
+  getClaimFullDetails: (claimId: number) =>
+    apiClient.get(`/admin/claims/${claimId}/full-details`),
+
+  // ═══════════════════════════════════════════════════════════════════
+  // USER MANAGEMENT
+  // ═══════════════════════════════════════════════════════════════════
+
+  getUsers: (page = 1, size = 20, search?: string, status?: string) =>
+    apiClient.get('/admin/users',
+      { page, size, ...(search && { search }), ...(status && { status }) }
+    ),
+
+  getUserDetails: (userId: number) =>
+    apiClient.get(`/admin/users/${userId}`),
+
+  blacklistUser: (userId: number, reason?: string) =>
+    apiClient.put(`/admin/users/${userId}/blacklist`, { reason }),
+
+  whitelistUser: (userId: number) =>
+    apiClient.put(`/admin/users/${userId}/whitelist`, {}),
+
+  getUserClaims: (userId: number, page = 1, size = 10) =>
+    apiClient.get(`/admin/users/${userId}/claims`, { page, size }),
+
+  // ═══════════════════════════════════════════════════════════════════
+  // CLAIMS MANAGEMENT
+  // ═══════════════════════════════════════════════════════════════════
+
+  getClaims: (page = 1, size = 20, status?: string, triggerType?: string) =>
+    apiClient.get('/admin/claims',
+      { page, size, ...(status && { status }), ...(triggerType && { trigger_type: triggerType }) }
+    ),
+
+  getClaimDetails: (claimId: number) =>
+    apiClient.get(`/admin/claims/${claimId}`),
+
+  reviewClaim: (claimId: number, action: string, notes: string) =>
+    apiClient.put(`/admin/claims/${claimId}/review`, { action, notes }),
+
+  // ═══════════════════════════════════════════════════════════════════
+  // POLICY MANAGEMENT
+  // ═══════════════════════════════════════════════════════════════════
+
+  getPolicies: (page = 1, size = 20, status?: string) =>
+    apiClient.get('/admin/policies',
+      { page, size, ...(status && { status }) }
+    ),
+
+  getPolicyDetails: (policyId: number) =>
+    apiClient.get(`/admin/policies/${policyId}`),
+
+  // ═══════════════════════════════════════════════════════════════════
+  // PAYOUT MANAGEMENT
+  // ═══════════════════════════════════════════════════════════════════
+
+  getPayouts: (page = 1, size = 20, status?: string) =>
+    apiClient.get('/admin/payouts',
+      { page, size, ...(status && { status }) }
+    ),
+
+  getPayoutDetails: (payoutId: number) =>
+    apiClient.get(`/admin/payouts/${payoutId}`),
+
+  // ═══════════════════════════════════════════════════════════════════
+  // CONFIGURATION
+  // ═══════════════════════════════════════════════════════════════════
+
+  getThresholds: () =>
+    apiClient.get('/admin/config/thresholds'),
+
+  updateThresholds: (config: any) =>
+    apiClient.put('/admin/config/thresholds', config),
+
+  // ═══════════════════════════════════════════════════════════════════
+  // AUDIT LOG
+  // ═══════════════════════════════════════════════════════════════════
+
+  getAuditLog: (page = 1, size = 20, action?: string) =>
+    apiClient.get<AuditLog[]>('/admin/audit-log',
+      { page, size, ...(action && { action }) }
+    ),
+
+  // ═══════════════════════════════════════════════════════════════════
+  // SIMULATOR
+  // ═══════════════════════════════════════════════════════════════════
+
+  simulateTrigger: (data: any) =>
+    apiClient.post('/admin/trigger/simulate', data),
+
+  // ═══════════════════════════════════════════════════════════════════
+  // LEGACY / STATS
+  // ═══════════════════════════════════════════════════════════════════
 
   getStats: () =>
-    API.get('/admin/stats'),
+    apiClient.get<AdminStats>('/admin/stats'),
 
   getAlerts: (page = 1, size = 10) =>
-    API.get('/admin/alerts', { params: { page, size } }),
+    apiClient.get<ClaimAlert[]>('/admin/alerts', { page, size }),
+
+  getLossRatio: () =>
+    apiClient.get('/admin/analytics'),
+
+  getRiskHeatmap: () =>
+    apiClient.get('/admin/analytics'),
 
   createClaimFromSimulation: (data: any) =>
-    API.post('/admin/claims/from-simulation', data)
+    apiClient.post('/admin/claims/from-simulation', data)
 }

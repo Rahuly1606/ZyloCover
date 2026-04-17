@@ -235,16 +235,16 @@ async def get_analytics_dashboard(
     # ─── FRAUD RATE BY ZONE ─────────────────────────────────────────────────
     
     fraud_rate_by_zone = {}
-    zones = db.query(Policy.work_zone).distinct().all()
+    zones = db.query(User.work_zone).distinct().all()
     for (zone,) in zones:
         if not zone:
             continue
-        zone_claims = db.query(Claim).join(Policy).filter(
-            and_(Policy.work_zone == zone, Claim.created_at >= week_start)
+        zone_claims = db.query(Claim).join(Policy).join(User).filter(
+            and_(User.work_zone == zone, Claim.created_at >= week_start)
         ).count()
         
-        zone_rejected = db.query(Claim).join(Policy).filter(
-            and_(Policy.work_zone == zone, Claim.status == "rejected",
+        zone_rejected = db.query(Claim).join(Policy).join(User).filter(
+            and_(User.work_zone == zone, Claim.status == "rejected",
                  Claim.created_at >= week_start)
         ).count()
         
@@ -275,3 +275,94 @@ async def get_analytics_dashboard(
         fraud_rate_by_zone=fraud_rate_by_zone,
         top_risk_users=top_risk_users,
     )
+
+
+@router.get("/forecast")
+async def get_risk_forecast(
+    admin_user: User = Depends(verify_admin_access),
+    db: Session = Depends(get_db)
+):
+    """
+    Get 7-day risk forecast using AI Prophet model.
+    
+    Shows predicted daily probability of high-severity weather events (triggers).
+    Helps admin prepare for peak claims periods.
+    
+    Returns daily forecasts with risk levels: LOW, MEDIUM, HIGH, CRITICAL
+    """
+    from app.services.ai_client import get_ai_client
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    ai_client = get_ai_client()
+    
+    # Get all unique cities in the system
+    cities = db.query(User.city).distinct().all()
+    city_list = [city[0] for city in cities if city[0]]
+    
+    forecast_data = {
+        "forecast_date": datetime.utcnow().isoformat(),
+        "cities": {}
+    }
+    
+    # Generate forecast for each city
+    for city in city_list:
+        try:
+            forecast_result = await ai_client.forecast_risk(
+                city=city,
+                days=7
+            )
+            
+            # Convert forecast to risk levels
+            forecast_data["cities"][city] = {
+                "daily_forecasts": [],
+                "summary": {
+                    "avg_probability": 0.0,
+                    "max_probability": 0.0,
+                    "high_risk_days": 0  # Days with probability > 0.6
+                }
+            }
+            
+            probabilities = []
+            high_risk_count = 0
+            
+            for day_forecast in forecast_result.get("daily_forecasts", []):
+                probability = day_forecast.get("probability", 0.5)
+                probabilities.append(probability)
+                
+                # Determine risk level
+                if probability >= 0.8:
+                    risk_level = "CRITICAL"
+                    high_risk_count += 1
+                elif probability >= 0.6:
+                    risk_level = "HIGH"
+                    high_risk_count += 1
+                elif probability >= 0.4:
+                    risk_level = "MEDIUM"
+                else:
+                    risk_level = "LOW"
+                
+                forecast_data["cities"][city]["daily_forecasts"].append({
+                    "date": day_forecast.get("date", (datetime.utcnow() + timedelta(days=len(probabilities))).isoformat()),
+                    "probability": round(probability, 3),
+                    "risk_level": risk_level,
+                    "predicted_triggers": day_forecast.get("trigger_types", []),
+                    "confidence": round(day_forecast.get("confidence", 0.0), 3)
+                })
+            
+            # Calculate summary statistics
+            if probabilities:
+                forecast_data["cities"][city]["summary"] = {
+                    "avg_probability": round(sum(probabilities) / len(probabilities), 3),
+                    "max_probability": round(max(probabilities), 3),
+                    "high_risk_days": high_risk_count
+                }
+        
+        except Exception as e:
+            logger.warning(f"Risk forecast failed for city {city}: {e}")
+            forecast_data["cities"][city] = {
+                "error": str(e),
+                "fallback": "Unable to generate forecast - using historical averages"
+            }
+    
+    return forecast_data

@@ -26,18 +26,18 @@ class UserProfile(BaseModel):
     experience_months: int
     is_fraud_flagged: bool
     is_active: bool
+    employee_id: str | None = None
+    job_verification_status: str | None = None
     latitude: float | None = None
     longitude: float | None = None
     address: str | None = None
+    registered_latitude: float | None = None
+    registered_longitude: float | None = None
+    registered_address: str | None = None
     created_at: datetime
 
     class Config:
         from_attributes = True
-        fields = {
-            'latitude': {'alias': 'base_latitude'},
-            'longitude': {'alias': 'base_longitude'},
-            'address': {'alias': 'base_address'},
-        }
 
 
 class UserStats(BaseModel):
@@ -66,7 +66,30 @@ async def get_profile(user_id: int = Depends(get_current_user), db: Session = De
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    return user
+    
+    # Map base_* fields to regular fields for frontend compatibility
+    return {
+        "id": user.id,
+        "name": user.name,
+        "email": user.email,
+        "phone": user.phone,
+        "platform": user.platform,
+        "work_zone": user.work_zone,
+        "avg_daily_income": user.avg_daily_income,
+        "avg_daily_hours": user.avg_daily_hours,
+        "experience_months": user.experience_months,
+        "is_fraud_flagged": user.is_fraud_flagged,
+        "is_active": user.is_active,
+        "employee_id": user.employee_id,
+        "job_verification_status": user.job_verification_status,
+        "latitude": user.base_latitude,
+        "longitude": user.base_longitude,
+        "address": user.base_address,
+        "registered_latitude": user.registered_latitude,
+        "registered_longitude": user.registered_longitude,
+        "registered_address": user.registered_address,
+        "created_at": user.created_at,
+    }
 
 
 @router.put("/profile", response_model=UserProfile)
@@ -98,7 +121,30 @@ async def update_profile(
     
     db.commit()
     db.refresh(user)
-    return user
+    
+    # Return mapped response like get_profile
+    return {
+        "id": user.id,
+        "name": user.name,
+        "email": user.email,
+        "phone": user.phone,
+        "platform": user.platform,
+        "work_zone": user.work_zone,
+        "avg_daily_income": user.avg_daily_income,
+        "avg_daily_hours": user.avg_daily_hours,
+        "experience_months": user.experience_months,
+        "is_fraud_flagged": user.is_fraud_flagged,
+        "is_active": user.is_active,
+        "employee_id": user.employee_id,
+        "job_verification_status": user.job_verification_status,
+        "latitude": user.base_latitude,
+        "longitude": user.base_longitude,
+        "address": user.base_address,
+        "registered_latitude": user.registered_latitude,
+        "registered_longitude": user.registered_longitude,
+        "registered_address": user.registered_address,
+        "created_at": user.created_at,
+    }
 
 
 @router.get("/stats", response_model=UserStats)

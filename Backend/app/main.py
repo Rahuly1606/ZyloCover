@@ -14,7 +14,9 @@ import datetime
 from dotenv import load_dotenv
 
 # ── Load environment variables ─────────────────────────────────────────────
-load_dotenv()
+# Always resolve .env relative to Backend directory so startup works from any cwd.
+backend_root = Path(__file__).resolve().parents[1]
+load_dotenv(backend_root / ".env")
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -27,8 +29,13 @@ if str(current_dir) not in sys.path:
 
 # ── Internal imports ──────────────────────────────────────────────────────
 from app.api.routes import auth, user, policy, pricing, trigger, claims, admin, payout
+from app.api.routes.admin_extended import router as admin_extended_router
+from app.api.routes.admin_approval import router as admin_approval_router
 from app.engine.scheduler import automation_engine
 from app.db.init_db import init_db
+
+# ── Import AI Service ─────────────────────────────────────────────────────
+from app.ai.service import app as ai_app
 
 # ── Logging ───────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -87,7 +94,7 @@ app = FastAPI(
 
 # ── CORS ──────────────────────────────────────────────────────────────────
 # Development: allow all | Production: restrict to frontend domain
-allowed_origins = [url.strip() for url in os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000").split(",")]
+allowed_origins = [url.strip() for url in os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000,http://localhost:8080,http://localhost:5174").split(",")]
 logger.info(f"CORS allowed origins: {allowed_origins}")
 app.add_middleware(
     CORSMiddleware,
@@ -110,11 +117,13 @@ async def add_process_time(request: Request, call_next):
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     logger.error(f"Unhandled exception: {exc}", exc_info=True)
+    is_dev = os.getenv("ENV", "development").lower() == "development"
     return JSONResponse(
         status_code=500,
         content={
             "error": "internal_server_error",
-            "message": "Something went wrong"
+            "message": "Something went wrong",
+            **({"exception_type": type(exc).__name__, "detail": str(exc)} if is_dev else {})
         }
     )
 
@@ -128,6 +137,11 @@ app.include_router(trigger.router)
 app.include_router(claims.router)
 app.include_router(payout.router)
 app.include_router(admin.router)
+app.include_router(admin_extended_router)
+app.include_router(admin_approval_router)
+
+# ── Mount AI Service as Sub-Application ──────────────────────────────────
+app.mount("/ai", ai_app)
 
 
 # ── Health endpoints (Render-safe) ────────────────────────────────────────
@@ -142,9 +156,20 @@ async def root():
 
 @app.get("/health")
 async def health():
+    """Comprehensive health check including AI service."""
+    ai_status = "unknown"
+    try:
+        import httpx
+        async with httpx.AsyncClient(timeout=2.0) as client:
+            resp = await client.get("http://localhost:8000/ai/health")
+            ai_status = "healthy" if resp.status_code == 200 else "unhealthy"
+    except:
+        ai_status = "unavailable"
+    
     return {
         "status": "healthy",
         "startup_complete": startup_complete,
+        "ai_service": ai_status,
         "timestamp": datetime.datetime.utcnow().isoformat(),
     }
 

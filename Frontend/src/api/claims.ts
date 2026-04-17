@@ -2,6 +2,12 @@
 import { apiClient } from './client'
 import type { Claim, FraudAudit } from '../types/api'
 
+export interface ClaimSubmissionPayload {
+    trigger_id: number
+    claim_latitude?: number
+    claim_longitude?: number
+}
+
 export const claimsApi = {
     /**
      * Get all claims for logged-in user
@@ -15,6 +21,13 @@ export const claimsApi = {
      */
     getAudit: async (claimId: number): Promise<FraudAudit> => {
         return apiClient.get(`/claims/${claimId}/audit`)
+    },
+
+    /**
+     * Submit a claim with current location for location-based fraud detection
+     */
+    submitWithLocation: async (payload: ClaimSubmissionPayload): Promise<Claim> => {
+        return apiClient.post('/claims/submit-with-location', payload)
     },
 
     /**

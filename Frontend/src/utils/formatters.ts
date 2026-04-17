@@ -17,6 +17,16 @@ export const formatters = {
     }
   },
 
+  // Format date (alias for dateTime)
+  formatDate: (date: string | Date): string => {
+    try {
+      const d = typeof date === 'string' ? parseISO(date) : date
+      return format(d, 'dd MMM yyyy, h:mm a')
+    } catch (e) {
+      return 'Invalid date'
+    }
+  },
+
   // Format date like "4 Apr"
   shortDate: (date: string | Date): string => {
     try {

@@ -29,7 +29,10 @@ export const Login = () => {
         navigate('/admin')
       } else {
         const result = await authService.login(email, password)
-        login(result.access_token, result.user.id, result.user)
+        login(result.access_token, result.user.id, {
+          ...result.user,
+          avg_weekly_income: result.user.avg_daily_income * 5 // Calculate weekly from daily
+        })
         navigate('/dashboard')
       }
     } catch (err) {
@@ -42,17 +45,17 @@ export const Login = () => {
   return (
     <div className="min-h-screen bg-slate-50">
       <Navbar />
-      
+
       <div className="px-4 py-12 pb-20">
-        <motion.div 
-          initial={{ y: 20, opacity: 0 }} 
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           className="w-full max-w-md mx-auto"
         >
           <div className="glass-card p-6 md:p-8 border border-purple-200 space-y-6">
             {/* Header */}
-            <motion.div 
-              initial={{ y: 20, opacity: 0 }} 
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.1 }}
               className="text-center"
@@ -68,8 +71,8 @@ export const Login = () => {
 
             {/* Error Message */}
             {error && (
-              <motion.div 
-                initial={{ y: 10, opacity: 0 }} 
+              <motion.div
+                initial={{ y: 10, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 className="p-4 bg-red-50 border border-red-200 rounded-lg"
               >
@@ -79,8 +82,8 @@ export const Login = () => {
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
-              <motion.div 
-                initial={{ y: 20, opacity: 0 }} 
+              <motion.div
+                initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.15 }}
               >
@@ -96,8 +99,8 @@ export const Login = () => {
                 />
               </motion.div>
 
-              <motion.div 
-                initial={{ y: 20, opacity: 0 }} 
+              <motion.div
+                initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.2 }}
               >
@@ -113,8 +116,8 @@ export const Login = () => {
                 />
               </motion.div>
 
-              <motion.div 
-                initial={{ y: 20, opacity: 0 }} 
+              <motion.div
+                initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.25 }}
                 className="flex items-center gap-2"
@@ -131,8 +134,8 @@ export const Login = () => {
                 </label>
               </motion.div>
 
-              <motion.div 
-                initial={{ y: 20, opacity: 0 }} 
+              <motion.div
+                initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.3 }}
               >
@@ -159,8 +162,8 @@ export const Login = () => {
 
             {/* Sign Up Link */}
             {!isAdmin && (
-              <motion.div 
-                initial={{ y: 20, opacity: 0 }} 
+              <motion.div
+                initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.35 }}
                 className="text-center text-sm"

@@ -28,7 +28,7 @@ export const AdminFraudQueue = () => {
     const fetchClaims = async () => {
       try {
         const result = await adminService.getFlaggedClaims(1, 50)
-        setClaims(result?.data || [])
+        setClaims((result || []) as FlaggedClaim[])
       } catch (err) {
         console.error('Failed to load flagged claims:', err)
       } finally {
@@ -92,19 +92,17 @@ export const AdminFraudQueue = () => {
                     <button
                       key={claim.id}
                       onClick={() => setSelectedClaim(claim)}
-                      className={`w-full text-left p-3 rounded-lg border transition-colors ${
-                        selectedClaim?.id === claim.id
-                          ? 'bg-purple-50 border-purple-200'
-                          : 'bg-white border-gray-200 hover:bg-gray-50'
-                      }`}
+                      className={`w-full text-left p-3 rounded-lg border transition-colors ${selectedClaim?.id === claim.id
+                        ? 'bg-purple-50 border-purple-200'
+                        : 'bg-white border-gray-200 hover:bg-gray-50'
+                        }`}
                     >
                       <div className="flex items-start justify-between mb-2">
                         <p className="font-semibold text-gray-900">Claim #{claim.claim_id}</p>
-                        <div className={`text-xs font-bold px-2 py-1 rounded ${
-                          claim.risk_level === 'high'
-                            ? 'bg-red-100 text-red-700'
-                            : 'bg-amber-100 text-amber-700'
-                        }`}>
+                        <div className={`text-xs font-bold px-2 py-1 rounded ${claim.risk_level === 'high'
+                          ? 'bg-red-100 text-red-700'
+                          : 'bg-amber-100 text-amber-700'
+                          }`}>
                           {claim.risk_level.toUpperCase()}
                         </div>
                       </div>
@@ -139,14 +137,12 @@ export const AdminFraudQueue = () => {
                   </div>
 
                   {/* Risk Assessment */}
-                  <div className={`p-4 rounded-lg border-2 ${
-                    selectedClaim.risk_level === 'high'
-                      ? 'bg-red-50 border-red-200'
-                      : 'bg-amber-50 border-amber-200'
-                  }`}>
-                    <h4 className={`font-bold mb-3 ${
-                      selectedClaim.risk_level === 'high' ? 'text-red-900' : 'text-amber-900'
-                    } flex items-center gap-2`}>
+                  <div className={`p-4 rounded-lg border-2 ${selectedClaim.risk_level === 'high'
+                    ? 'bg-red-50 border-red-200'
+                    : 'bg-amber-50 border-amber-200'
+                    }`}>
+                    <h4 className={`font-bold mb-3 ${selectedClaim.risk_level === 'high' ? 'text-red-900' : 'text-amber-900'
+                      } flex items-center gap-2`}>
                       <AlertTriangle className="h-4 w-4" />
                       Risk Summary
                     </h4>

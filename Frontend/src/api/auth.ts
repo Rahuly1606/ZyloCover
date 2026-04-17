@@ -8,21 +8,23 @@ export const authApi = {
         password: string
         name: string
         phone: string
-        platform: string
-        work_zone: string
+        employee_id: string
+        job_proof_image?: string  // Base64 encoded image
+        city: string
+        zone_risk: string
+        delivery_platform: string
         avg_daily_income: number
-        avg_daily_hours: number
-        location?: {
-            latitude: number
-            longitude: number
-            address?: string
-        }
+        avg_daily_hours?: number
+        experience_months: number  // Months of delivery experience
+        registered_latitude?: number
+        registered_longitude?: number
+        registered_address?: string
     }): Promise<AuthResponse> => {
         try {
             return await apiClient.post('/auth/signup', data)
         } catch (error: any) {
             if (error.detail?.includes('already registered')) {
-                throw new Error('This email is already registered. Please use a different email or sign in.')
+                throw new Error('This email or employee ID is already registered. Please use different credentials.')
             }
             throw new Error(error.detail || 'Signup failed. Please try again.')
         }
@@ -47,7 +49,10 @@ export const authApi = {
             return await apiClient.post('/auth/admin-login', { email, password })
         } catch (error: any) {
             if (error.status === 401) {
-                throw new Error('Invalid admin credentials. Please check your email and password.')
+                throw new Error('Invalid admin email or password.')
+            }
+            if (error.status === 403) {
+                throw new Error('Admin access required. This account does not have admin privileges.')
             }
             throw new Error(error.detail || 'Admin login failed. Please try again.')
         }

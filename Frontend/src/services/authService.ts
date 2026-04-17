@@ -1,4 +1,4 @@
-import API from './api'
+import { apiClient } from '../api/client'
 
 interface SignupData {
   name: string
@@ -17,20 +17,24 @@ interface LoginData {
 }
 
 interface AuthResponse {
-  data: any
   access_token: string
+  token_type: string
   user: {
     id: number
     name: string
     email: string
     phone: string
+    employee_id: string
+    job_verification_status: string
     city: string
     zone_risk: string
     avg_daily_income: number
-    avg_weekly_income: number
     is_blacklisted: boolean
     risk_score: number
     fraud_flags: number
+    registered_latitude?: number
+    registered_longitude?: number
+    registered_address?: string
   }
 }
 
@@ -40,14 +44,14 @@ interface AdminAuthResponse {
 
 export const authService = {
   signup: async (data: SignupData): Promise<AuthResponse> => {
-    return API.post('/auth/signup', data)
+    return apiClient.post<AuthResponse>('/auth/signup', data)
   },
 
   login: async (email: string, password: string): Promise<AuthResponse> => {
-    return API.post('/auth/login', { email, password })
+    return apiClient.post<AuthResponse>('/auth/login', { email, password })
   },
 
   adminLogin: async (email: string, password: string): Promise<AdminAuthResponse> => {
-    return API.post('/auth/admin-login', { email, password })
+    return apiClient.post<AdminAuthResponse>('/auth/admin-login', { email, password })
   }
 }

@@ -6,29 +6,51 @@
 export interface AuthResponse {
     access_token: string
     token_type: string
-    user_id: number
+    user: {
+        id: number
+        name: string
+        email: string
+        phone: string
+        employee_id: string
+        job_verification_status: string
+        city: string
+        zone_risk: string
+        avg_daily_income: number
+        is_blacklisted: boolean
+        risk_score: number
+        fraud_flags: number
+        registered_latitude?: number
+        registered_longitude?: number
+        registered_address?: string
+    }
 }
 
-// User Profile (including location)
+// User Profile (including location and job verification)
 export interface User {
     is_fraud_flagged: any
     id: number
     name: string
     email: string
     phone: string
+    employee_id: string
+    job_verification_status: "pending" | "approved" | "rejected"
+    job_proof_image?: string
     platform: "swiggy" | "zomato" | "uber"
     work_zone: string
     avg_daily_income: number
     avg_daily_hours: number
     experience_months: number
-    latitude?: number       // NEW: GPS coordinates
-    longitude?: number      // NEW: GPS coordinates
-    address?: string        // NEW: Reverse geocoded address
-    all_time_claim_count: number    // NEW: For experience rating
-    fraud_flag_count: number         // NEW: 3-strike blacklisting
-    is_blacklisted: boolean          // NEW: All claims rejected if true
-    user_risk_score: number          // NEW: 0-100 actuarial score
-    last_gps_update?: string         // NEW: Stale location detection
+    latitude?: number       // Current GPS coordinates
+    longitude?: number      // Current GPS coordinates
+    address?: string        // Reverse geocoded address
+    registered_latitude?: number    // Signup location
+    registered_longitude?: number   // Signup location
+    registered_address?: string     // Signup location
+    all_time_claim_count: number    // For experience rating
+    fraud_flag_count: number         // 3-strike blacklisting
+    is_blacklisted: boolean          // All claims rejected if true
+    user_risk_score: number          // 0-100 actuarial score
+    last_gps_update?: string         // Stale location detection
     is_active: boolean
     created_at: string
 }
@@ -113,6 +135,11 @@ export interface Claim {
     status: "approved" | "flagged" | "rejected" | "paid"
     fraud_score: number             // 0-100
     fraud_decision: "approved" | "flagged" | "rejected"
+    // Location fields
+    claim_latitude?: number
+    claim_longitude?: number
+    location_distance_km?: number
+    location_mismatch_flag?: "nearby" | "moderate" | "far" | null
     created_at: string
     settled_at?: string
 }
@@ -131,6 +158,11 @@ export interface FraudAudit {
     fraud_score: number
     decision: "approved" | "flagged" | "rejected"
     layers: FraudLayer[]
+    // Location analysis
+    claim_latitude?: number
+    claim_longitude?: number
+    location_distance_km?: number
+    location_mismatch_flag?: "nearby" | "moderate" | "far" | null
 }
 
 // Payout Settlement

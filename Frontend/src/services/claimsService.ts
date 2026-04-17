@@ -1,15 +1,20 @@
-import API from './api'
+import { apiClient } from '../api/client'
+
+interface ClaimData {
+  id: number
+  [key: string]: any
+}
 
 export const claimsService = {
-  getClaims: (page = 1, size = 20, filters: any = {}) => 
-    API.get('/claims', { params: { page, size, ...filters } }),
+  getClaims: (page = 1, size = 20, filters: any = {}) =>
+    apiClient.get<ClaimData[]>('/claims', { page, size, ...filters }),
 
-  getClaimById: (id: number) => 
-    API.get(`/claims/${id}/audit`),
+  getClaimById: (id: number) =>
+    apiClient.get<ClaimData>(`/claims/${id}/audit`),
 
-  getStats: () => 
-    API.get('/claims/stats'),
+  getStats: () =>
+    apiClient.get<any>('/claims/stats'),
 
   getFraudDetails: (claimId: number) =>
-    API.get(`/claims/${claimId}/audit`)
+    apiClient.get<ClaimData>(`/claims/${claimId}/audit`)
 }

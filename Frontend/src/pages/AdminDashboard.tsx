@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Navbar } from '@/components/layout/Navbar'
 import { AdminSidebar } from '@/components/layout/AdminSidebar'
-import { Users, ShieldCheck, BarChart3, Wallet, AlertTriangle, SlidersHorizontal, ShieldAlert, ClipboardList, CircleCheck } from 'lucide-react'
+import { Users, ShieldCheck, BarChart3, Wallet, AlertTriangle, SlidersHorizontal, ShieldAlert, ClipboardList, CircleCheck, TrendingUp } from 'lucide-react'
 import { Button } from '@/components/common/Button'
 import { StatusBadge, LoadingSpinner, MetricCard } from '@/components/common'
 import { adminService } from '@/services/adminService'
@@ -27,20 +27,32 @@ interface ClaimAlert {
   created_at: string
 }
 
+interface DailyForecast {
+  date: string
+  probability: number
+  risk_level: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'
+  predicted_triggers: string[]
+  confidence: number
+}
+
 export const AdminDashboard = () => {
   const navigate = useNavigate()
   const [stats, setStats] = useState<AdminStats | null>(null)
   const [alerts, setAlerts] = useState<ClaimAlert[]>([])
+  const [forecast, setForecast] = useState<Record<string, any> | null>(null)
   const [loading, setLoading] = useState(true)
+
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [statsResult, alertsResult] = await Promise.all([
+        const [statsResult, alertsResult, forecastResult] = await Promise.all([
           adminService.getStats(),
           adminService.getAlerts(1, 10),
+          adminService.getForecast(),
         ])
-        setStats(statsResult?.data)
-        setAlerts(alertsResult?.data || [])
+        setStats(statsResult as AdminStats)
+        setAlerts((alertsResult || []) as ClaimAlert[])
+        setForecast(forecastResult)
       } catch (err) {
         console.error('Failed to load admin data:', err)
       } finally {
@@ -52,10 +64,10 @@ export const AdminDashboard = () => {
 
   if (loading) return <LoadingSpinner fullHeight />
 
-  const lossRatioColor = !stats ? 'text-gray-600' : 
+  const lossRatioColor = !stats ? 'text-gray-600' :
     stats.loss_ratio < 0.5 ? 'text-green-600' :
-    stats.loss_ratio < 0.8 ? 'text-amber-600' :
-    'text-red-600'
+      stats.loss_ratio < 0.8 ? 'text-amber-600' :
+        'text-red-600'
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -68,25 +80,25 @@ export const AdminDashboard = () => {
 
           {/* Key Metrics */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-            <MetricCard 
-              label="Active Workers" 
-              value={stats?.total_workers || 0} 
-              icon={<Users className="h-5 w-5" />} 
+            <MetricCard
+              label="Active Workers"
+              value={stats?.total_workers || 0}
+              icon={<Users className="h-5 w-5" />}
             />
-            <MetricCard 
-              label="Active Policies" 
-              value={stats?.active_policies || 0} 
-              icon={<ShieldCheck className="h-5 w-5" />} 
+            <MetricCard
+              label="Active Policies"
+              value={stats?.active_policies || 0}
+              icon={<ShieldCheck className="h-5 w-5" />}
             />
-            <MetricCard 
-              label="Total Claims" 
-              value={stats?.total_claims || 0} 
-              icon={<BarChart3 className="h-5 w-5" />} 
+            <MetricCard
+              label="Total Claims"
+              value={stats?.total_claims || 0}
+              icon={<BarChart3 className="h-5 w-5" />}
             />
-            <MetricCard 
-              label="Total Payouts" 
-              value={formatters.currency(stats?.total_payouts || 0)} 
-              icon={<Wallet className="h-5 w-5" />} 
+            <MetricCard
+              label="Total Payouts"
+              value={formatters.currency(stats?.total_payouts || 0)}
+              icon={<Wallet className="h-5 w-5" />}
             />
           </div>
 
@@ -101,11 +113,10 @@ export const AdminDashboard = () => {
                 </div>
                 <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden mb-3">
                   <div
-                    className={`h-full transition-all ${
-                      (stats?.loss_ratio || 0) < 0.5 ? 'bg-green-500' :
+                    className={`h-full transition-all ${(stats?.loss_ratio || 0) < 0.5 ? 'bg-green-500' :
                       (stats?.loss_ratio || 0) < 0.8 ? 'bg-amber-500' :
-                      'bg-red-500'
-                    }`}
+                        'bg-red-500'
+                      }`}
                     style={{ width: `${Math.min((stats?.loss_ratio || 0) * 100, 100)}%` }}
                   />
                 </div>
@@ -143,8 +154,8 @@ export const AdminDashboard = () => {
               <div className="bg-white rounded-lg p-6 border border-gray-200">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-lg font-bold text-gray-900">Recent Fraud Alerts</h3>
-                  <Button 
-                    variant="secondary" 
+                  <Button
+                    variant="secondary"
                     onClick={() => navigate('/admin/fraud-queue')}
                     className="text-sm"
                   >
@@ -155,7 +166,7 @@ export const AdminDashboard = () => {
                 {alerts.length > 0 ? (
                   <div className="space-y-3">
                     {alerts.map(alert => (
-                      <div 
+                      <div
                         key={alert.id}
                         className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 cursor-pointer transition-colors"
                       >
@@ -163,8 +174,8 @@ export const AdminDashboard = () => {
                           <p className="font-semibold text-gray-900">Claim #{alert.claim_id}</p>
                           <p className="text-sm text-gray-600 capitalize">{alert.type}</p>
                         </div>
-                        <StatusBadge 
-                          status={alert.risk_level === 'high' ? 'flagged' : 'triggered'} 
+                        <StatusBadge
+                          status={alert.risk_level === 'high' ? 'flagged' : 'triggered'}
                         />
                       </div>
                     ))}
@@ -173,6 +184,61 @@ export const AdminDashboard = () => {
                   <p className="text-center text-gray-500 py-8">No recent alerts</p>
                 )}
               </div>
+
+              {/* Risk Forecast */}
+              {forecast && (
+                <div className="bg-white rounded-lg p-6 border border-gray-200">
+                  <div className="flex items-center gap-2 mb-4">
+                    <TrendingUp className="h-5 w-5 text-blue-600" />
+                    <h3 className="text-lg font-bold text-gray-900">7-Day Risk Forecast</h3>
+                  </div>
+                  <p className="text-sm text-gray-600 mb-4">AI-powered prediction of high-severity weather events leading to claims</p>
+
+                  <div className="space-y-3">
+                    {Object.entries(forecast.cities || {}).slice(0, 3).map(([city, cityData]: [string, any]) => (
+                      <div key={city} className="border border-gray-200 rounded-lg p-4">
+                        <p className="font-semibold text-gray-900 mb-3">{city}</p>
+                        <div className="space-y-2">
+                          {cityData.daily_forecasts?.slice(0, 7).map((day: any, idx: number) => {
+                            const riskColor =
+                              day.risk_level === 'CRITICAL' ? 'bg-red-100 border-red-300' :
+                                day.risk_level === 'HIGH' ? 'bg-orange-100 border-orange-300' :
+                                  day.risk_level === 'MEDIUM' ? 'bg-yellow-100 border-yellow-300' :
+                                    'bg-green-100 border-green-300'
+
+                            const textColor =
+                              day.risk_level === 'CRITICAL' ? 'text-red-700' :
+                                day.risk_level === 'HIGH' ? 'text-orange-700' :
+                                  day.risk_level === 'MEDIUM' ? 'text-yellow-700' :
+                                    'text-green-700'
+
+                            return (
+                              <div key={idx} className={`flex items-center justify-between p-2 rounded border ${riskColor}`}>
+                                <div className="flex-1">
+                                  <p className={`text-sm font-medium ${textColor}`}>
+                                    {new Date(day.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                                  </p>
+                                  <p className="text-xs text-gray-600">
+                                    Prob: {(day.probability * 100).toFixed(0)}% | Conf: {(day.confidence * 100).toFixed(0)}%
+                                  </p>
+                                </div>
+                                <span className={`text-xs font-bold px-2 py-1 rounded ${textColor} bg-white`}>
+                                  {day.risk_level}
+                                </span>
+                              </div>
+                            )
+                          })}
+                        </div>
+                        {cityData.summary && (
+                          <div className="mt-3 pt-3 border-t border-gray-200 text-xs text-gray-600">
+                            <p>Avg Risk: {(cityData.summary.avg_probability * 100).toFixed(0)}% | High-Risk Days: {cityData.summary.high_risk_days}</p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Quick Actions */}
               <div className="bg-white rounded-lg p-6 border border-gray-200">

@@ -1,18 +1,18 @@
-import API from './api'
+import { apiClient } from '../api/client'
 
 export const triggerService = {
-  simulate: (data: any) => 
-    API.post('/trigger/active', data),
+  simulate: (data: any) =>
+    apiClient.post<any>('/trigger/active', data),
 
-  getEvents: (page = 1, size = 20) => 
-    API.get('/trigger/active'),
+  getEvents: (page = 1, size = 20) =>
+    apiClient.get<any>('/trigger/active'),
 
-  getEventById: (id: number) => 
-    API.get('/trigger/active'),
+  getEventById: (id: number) =>
+    apiClient.get<any>('/trigger/active'),
 
-  getCities: () => 
-    API.get('/trigger/active'),
+  getCities: () =>
+    apiClient.get<any>('/trigger/active'),
 
   getThresholds: () =>
-    API.get('/trigger/active')
+    apiClient.get<any>('/trigger/active')
 }

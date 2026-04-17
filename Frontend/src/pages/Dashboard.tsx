@@ -38,7 +38,7 @@ interface Trigger {
 
 export const Dashboard = () => {
   const navigate = useNavigate()
-  const { user } = useAuth()
+  const { user, isAuthenticated, isLoading: authLoading, token } = useAuth()
   const [policy, setPolicy] = useState<Policy | null>(null)
   const [claims, setClaims] = useState<Claim[]>([])
   const [environmentalData, setEnvironmentalData] = useState<EnvironmentalData | null>(null)
@@ -46,7 +46,26 @@ export const Dashboard = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
+  // Check authentication and redirect if not logged in
   useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      navigate('/login')
+    }
+  }, [authLoading, isAuthenticated, navigate])
+
+  // Fetch data only after auth is fully loaded and user exists
+  useEffect(() => {
+    // Don't fetch if auth is still loading
+    if (authLoading) {
+      return
+    }
+
+    // Don't fetch if not authenticated
+    if (!isAuthenticated || !user || !token) {
+      setLoading(false)
+      return
+    }
+
     const fetchData = async () => {
       try {
         const [policiesResult, claimsResult] = await Promise.all([
@@ -56,7 +75,7 @@ export const Dashboard = () => {
         // Get first active policy if exists
         // @ts-ignore
         setPolicy(policiesResult && policiesResult.length > 0 ? policiesResult[0] : null)
-        setClaims(claimsResult?.data || [])
+        setClaims(claimsResult || [])
 
         // Fetch environmental data - backend will use user's data if not provided
         try {
@@ -79,8 +98,9 @@ export const Dashboard = () => {
         setLoading(false)
       }
     }
+
     fetchData()
-  }, [user])
+  }, [authLoading, isAuthenticated, user, token])
 
   if (loading) {
     return (
@@ -139,7 +159,7 @@ export const Dashboard = () => {
               <Shield className="h-4 w-4 text-purple-600" />
             </div>
             <p className="font-bold text-slate-900 text-lg">
-              {policy?.coverage_tier 
+              {policy?.coverage_tier
                 ? policy.coverage_tier.charAt(0).toUpperCase() + policy.coverage_tier.slice(1)
                 : 'None'}
             </p>

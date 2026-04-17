@@ -27,7 +27,7 @@ export const AdminAuditLog = () => {
     const fetchLogs = async () => {
       try {
         const result = await adminService.getAuditLog(1, 100)
-        setLogs(result?.data || [])
+        setLogs((result || []) as AuditLog[])
       } catch (err) {
         console.error('Failed to load audit logs:', err)
       } finally {

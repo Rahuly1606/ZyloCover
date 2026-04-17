@@ -26,7 +26,7 @@ export const Claims = () => {
     const fetchData = async () => {
       try {
         const claimsResult = await claimsService.getClaims(1, 50)
-        const claimsList = Array.isArray(claimsResult) ? claimsResult : claimsResult?.data || []
+        const claimsList = Array.isArray(claimsResult) ? claimsResult : claimsResult || []
         setClaims(claimsList)
         setStats({
           total: claimsList.length || 0,
@@ -102,8 +102,8 @@ export const Claims = () => {
                 key={f}
                 onClick={() => setFilter(f)}
                 className={`px-3 py-1.5 rounded-full text-sm font-semibold transition-colors ${filter === f
-                    ? 'bg-purple-600 text-white'
-                    : 'bg-white text-slate-700 border border-purple-200 hover:bg-purple-50'
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-white text-slate-700 border border-purple-200 hover:bg-purple-50'
                   }`}
               >
                 {f.charAt(0).toUpperCase() + f.slice(1)}

@@ -19,9 +19,10 @@ import {
   Save,
   AlertTriangle,
   Navigation,
+  CheckCircle,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import AppShell from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -61,19 +62,19 @@ const getRiskBadgeColor = (isFraudFlagged: boolean): string => {
 // Fraud prevention helper
 const checkFraudRisks = (user: UserType): { riskLevel: "high" | "medium" | "low"; risks: string[] } => {
   const risks: string[] = [];
-  
+
   if (user.is_fraud_flagged) {
     risks.push("Account flagged for suspicious activity");
   }
-  
+
   if (!user.avg_daily_income || user.avg_daily_income < 500) {
     risks.push("Income too low for coverage verification");
   }
-  
+
   if (!user.avg_daily_hours || user.avg_daily_hours < 4) {
     risks.push("Working hours seem unusually low");
   }
-  
+
   if (!user.experience_months || user.experience_months < 3) {
     risks.push("Insufficient delivery experience");
   }
@@ -87,19 +88,107 @@ const checkFraudRisks = (user: UserType): { riskLevel: "high" | "medium" | "low"
 
 export const Profile = () => {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, isAuthenticated, isLoading: authLoading, token } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [formData, setFormData] = useState<Partial<UserType>>({});
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [locationRefreshInterval, setLocationRefreshInterval] = useState<NodeJS.Timeout | null>(null);
 
-  // Fetch user data
+  // Calculate distance between two coordinates in km
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371; // Earth's radius in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
+
+  // Check authentication and redirect if not logged in
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      navigate('/login')
+    }
+  }, [authLoading, isAuthenticated, navigate])
+
+  // Fetch user data - skip until auth fully loaded and token exists
   const { data: user, loading: userLoading, error: userError, refetch: refetchUser } = useApi<UserType>(() =>
-    userApi.getProfile()
+    userApi.getProfile(), { skip: !isAuthenticated || !token }
   );
   const { data: stats, loading: statsLoading, error: statsError } = useApi<UserStats>(() =>
-    userApi.getStats()
+    userApi.getStats(), { skip: !isAuthenticated || !token }
   );
+
+  // Auto-refresh current location every 30 seconds
+  useEffect(() => {
+    if (!user || !user.latitude || !user.longitude) return;
+
+    const refreshLocation = async () => {
+      if (!navigator.geolocation) return;
+
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+
+          try {
+            // Only update if location changed significantly (>100 meters)
+            const distance = calculateDistance(
+              user.latitude!,
+              user.longitude!,
+              latitude,
+              longitude
+            );
+
+            if (distance > 0.1) { // 100 meters
+              const response = await fetch(
+                `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
+              );
+              const data = await response.json();
+              const address =
+                data.address?.city ||
+                data.address?.town ||
+                data.address?.village ||
+                "Location updated";
+
+              // Auto-update location in background
+              await userApi.updateProfile({
+                latitude,
+                longitude,
+                address,
+              });
+
+              console.log('Location auto-updated:', { latitude, longitude, address });
+              refetchUser();
+            }
+          } catch (err) {
+            console.error('Auto location update failed:', err);
+          }
+        },
+        (error) => {
+          console.error('Geolocation error:', error);
+        },
+        {
+          enableHighAccuracy: false,
+          timeout: 5000,
+          maximumAge: 30000,
+        }
+      );
+    };
+
+    // Start auto-refresh
+    const interval = setInterval(refreshLocation, 30000); // Every 30 seconds
+    setLocationRefreshInterval(interval);
+
+    // Cleanup on unmount
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [user, refetchUser]);
 
   const isLoading = userLoading || statsLoading;
   const hasError = userError || statsError;
@@ -133,7 +222,8 @@ export const Profile = () => {
         longitude: formData.longitude,
         address: formData.address,
       });
-      alert("Profile updated successfully.");
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
       setIsEditing(false);
       refetchUser();
     } catch (error) {
@@ -280,6 +370,19 @@ export const Profile = () => {
           </button>
         </motion.div>
 
+        {/* Success Message */}
+        {saveSuccess && (
+          <motion.div
+            initial={{ y: -10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -10, opacity: 0 }}
+            className="p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3"
+          >
+            <CheckCircle className="h-5 w-5 text-green-600" />
+            <p className="text-sm font-semibold text-green-700">Profile updated successfully!</p>
+          </motion.div>
+        )}
+
         {/* Profile Card */}
         <motion.div
           initial={{ y: 20, opacity: 0 }}
@@ -365,7 +468,7 @@ export const Profile = () => {
           </div>
         </motion.div>
 
-        {/* Location Information */}
+        {/* Employee ID & Verification */}
         <motion.div
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -373,8 +476,102 @@ export const Profile = () => {
           className="glass-card space-y-4 p-4 border border-purple-200"
         >
           <h3 className="font-display text-sm font-semibold text-slate-900 flex items-center gap-2">
-            <MapPin className="h-5 w-5 text-purple-600" />
-            Location Details
+            <Award className="h-5 w-5 text-purple-600" />
+            Employment Verification
+          </h3>
+          <div className="space-y-3">
+            {user.employee_id && (
+              <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
+                <p className="text-xs text-muted-foreground mb-1">Employee ID</p>
+                <p className="text-sm font-mono font-semibold text-slate-900">{user.employee_id}</p>
+              </div>
+            )}
+            {user.job_verification_status && (
+              <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
+                <p className="text-xs text-muted-foreground mb-1">Verification Status</p>
+                <div className="flex items-center gap-2">
+                  {user.job_verification_status === 'approved' && (
+                    <>
+                      <div className="h-2.5 w-2.5 rounded-full bg-green-500"></div>
+                      <p className="text-sm font-semibold text-green-700">Verified</p>
+                    </>
+                  )}
+                  {user.job_verification_status === 'pending' && (
+                    <>
+                      <div className="h-2.5 w-2.5 rounded-full bg-yellow-500 animate-pulse"></div>
+                      <p className="text-sm font-semibold text-yellow-700">Pending Review</p>
+                    </>
+                  )}
+                  {user.job_verification_status === 'rejected' && (
+                    <>
+                      <div className="h-2.5 w-2.5 rounded-full bg-red-500"></div>
+                      <p className="text-sm font-semibold text-red-700">Verification Failed</p>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </motion.div>
+
+        {/* Registered Location (at Signup) */}
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.26 }}
+          className="glass-card space-y-4 p-4 border border-blue-200 bg-gradient-to-br from-blue-50 to-blue-50"
+        >
+          <h3 className="font-display text-sm font-semibold text-slate-900 flex items-center gap-2">
+            <MapPin className="h-5 w-5 text-blue-600" />
+            Registered Location
+          </h3>
+          {user.registered_latitude && user.registered_longitude ? (
+            <div className="p-4 bg-white rounded-lg border border-blue-200 space-y-3">
+              {user.registered_address && (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Address</p>
+                  <p className="text-sm font-semibold text-slate-900">{user.registered_address}</p>
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-xs text-muted-foreground">Latitude</p>
+                  <p className="text-xs font-mono text-slate-700">{user.registered_latitude.toFixed(4)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Longitude</p>
+                  <p className="text-xs font-mono text-slate-700">{user.registered_longitude.toFixed(4)}</p>
+                </div>
+              </div>
+              <p className="text-xs text-slate-600 pt-2 border-t border-blue-200">
+                This is your location at registration. It's used for initial fraud verification.
+              </p>
+            </div>
+          ) : (
+            <div className="p-4 bg-white rounded-lg border border-blue-200 space-y-3">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-semibold text-blue-900">No Registered Location</p>
+                  <p className="text-xs text-blue-700 mt-1">
+                    Your registration location wasn't captured during signup.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </motion.div>
+
+        {/* Location Information - Current/Base Location */}
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.25 }}
+          className="glass-card space-y-4 p-4 border border-purple-200"
+        >
+          <h3 className="font-display text-sm font-semibold text-slate-900 flex items-center gap-2">
+            <Navigation className="h-5 w-5 text-purple-600" />
+            Current Location
           </h3>
           {user.address || (user.latitude && user.longitude) ? (
             <div className="p-4 bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg border border-blue-200 space-y-3">
@@ -396,16 +593,18 @@ export const Profile = () => {
                   </div>
                 </div>
               )}
-              <p className="text-xs text-slate-600 mt-2">Location verified and active</p>
+              <p className="text-xs text-slate-600 pt-2 border-t border-blue-200">
+                This is your current work location. Update it in edit mode if needed.
+              </p>
             </div>
           ) : (
             <div className="p-4 bg-gradient-to-br from-amber-50 to-orange-50 rounded-lg border border-amber-200 space-y-3">
               <div className="flex items-start gap-3">
-                <Navigation className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sm font-semibold text-amber-900">No Location Captured</p>
+                  <p className="text-sm font-semibold text-amber-900">No Current Location</p>
                   <p className="text-xs text-amber-700 mt-1">
-                    Your location helps us provide better coverage and risk assessment. Capture your location in edit mode.
+                    Capture your current location in edit mode for better coverage and risk assessment.
                   </p>
                 </div>
               </div>
@@ -636,28 +835,43 @@ export const Profile = () => {
               <div className="space-y-2 border-t border-slate-200 pt-4">
                 <label className="text-sm font-semibold text-slate-900 flex items-center gap-2">
                   <MapPin className="h-4 w-4 text-purple-600" />
-                  Your Location
+                  Update Your Current Location
                 </label>
+                <p className="text-xs text-slate-600 mb-2">
+                  This helps us provide accurate coverage and risk assessment for your work area.
+                </p>
                 {formData.address || (formData.latitude && formData.longitude) ? (
                   <div className="p-3 bg-green-50 rounded-lg border border-green-200 space-y-2">
                     {formData.address && (
-                      <p className="text-sm font-semibold text-green-700">
-                        {formData.address}
-                      </p>
+                      <div>
+                        <p className="text-xs text-green-600 font-medium">Current Address</p>
+                        <p className="text-sm font-semibold text-green-700">
+                          {formData.address}
+                        </p>
+                      </div>
                     )}
                     {formData.latitude && formData.longitude && (
-                      <p className="text-xs text-green-600 font-mono">
-                        {formData.latitude.toFixed(4)}, {formData.longitude.toFixed(4)}
-                      </p>
+                      <div className="flex items-center gap-3 text-xs">
+                        <div>
+                          <span className="text-green-600">Lat:</span>
+                          <span className="font-mono text-green-700 ml-1">{formData.latitude.toFixed(4)}</span>
+                        </div>
+                        <div>
+                          <span className="text-green-600">Lon:</span>
+                          <span className="font-mono text-green-700 ml-1">{formData.longitude.toFixed(4)}</span>
+                        </div>
+                      </div>
                     )}
                   </div>
                 ) : (
-                  <p className="text-xs text-slate-600">No location captured yet. Tap the button below to capture.</p>
+                  <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                    <p className="text-xs text-amber-700">No location captured yet. Tap the button below to capture your current location.</p>
+                  </div>
                 )}
                 <Button
                   onClick={handleGetLocation}
                   disabled={isGettingLocation}
-                  className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-2 text-sm"
+                  className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-2.5 text-sm"
                 >
                   {isGettingLocation ? (
                     <>
@@ -667,7 +881,7 @@ export const Profile = () => {
                   ) : (
                     <>
                       <Navigation className="mr-2 h-4 w-4" />
-                      {formData.address ? "Update Location" : "Capture Location"}
+                      {formData.address ? "Update Location" : "Capture My Location"}
                     </>
                   )}
                 </Button>

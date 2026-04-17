@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ShieldAlert, Loader2, ArrowLeft } from 'lucide-react'
+import { ShieldAlert, Loader2, ArrowLeft, Lock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -10,12 +10,19 @@ import { authApi } from '@/api/auth'
 
 export default function AdminLogin() {
   const navigate = useNavigate()
-  const { adminLogin } = useAuth()
-  
+  const { adminLogin, isAdmin, adminToken } = useAuth()
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  // Redirect if already logged in as admin
+  useEffect(() => {
+    if (isAdmin && adminToken) {
+      navigate('/admin', { replace: true })
+    }
+  }, [isAdmin, adminToken, navigate])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -23,12 +30,14 @@ export default function AdminLogin() {
     setLoading(true)
 
     try {
+      console.log('Admin login attempt:', { email, hasPassword: !!password })
       const response = await authApi.adminLogin(email, password)
+      console.log('Admin login successful:', response)
       adminLogin(response.admin_token)
       navigate('/admin', { replace: true })
     } catch (err: any) {
-      setError(err.detail || 'Invalid admin credentials')
-      setEmail('')
+      console.error('Admin login error:', err)
+      setError(err.message || err.detail || 'Invalid admin credentials')
       setPassword('')
     } finally {
       setLoading(false)
@@ -83,9 +92,6 @@ export default function AdminLogin() {
                 disabled={loading}
                 required
               />
-              <p className="text-xs text-muted-foreground mt-1">
-                Default: admin@zylocover.com
-              </p>
             </div>
 
             <div>
@@ -98,9 +104,6 @@ export default function AdminLogin() {
                 disabled={loading}
                 required
               />
-              <p className="text-xs text-muted-foreground mt-1">
-                Default: Admin1234!
-              </p>
             </div>
 
             <Button
@@ -120,12 +123,24 @@ export default function AdminLogin() {
           </form>
 
           {/* Info */}
-          <div className="mt-6 p-4 bg-muted/50 rounded-lg">
-            <p className="text-xs text-muted-foreground">
-              <span className="font-semibold text-foreground">Demo Credentials:</span><br />
-              Email: admin@zylocover.com<br />
-              Password: Admin1234!
+          <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+            <p className="text-xs text-blue-900 dark:text-blue-100 mb-3">
+              <span className="font-semibold">🔐 Default Admin Credentials:</span>
             </p>
+            <div className="space-y-2 text-xs text-blue-800 dark:text-blue-200">
+              <div className="bg-blue-100 dark:bg-blue-900 p-2 rounded">
+                <p className="font-semibold mb-1">Email</p>
+                <code className="block bg-white dark:bg-black px-2 py-1 rounded text-xs">
+                  admin@zylocover.com
+                </code>
+              </div>
+              <div className="bg-blue-100 dark:bg-blue-900 p-2 rounded">
+                <p className="font-semibold mb-1">Password</p>
+                <code className="block bg-white dark:bg-black px-2 py-1 rounded text-xs">
+                  Admin1234!
+                </code>
+              </div>
+            </div>
           </div>
         </div>
 

@@ -72,8 +72,8 @@ export const Policy = () => {
           policyService.getActive().catch(() => null),
           policyService.getHistory(1, 10),
         ])
-        setPolicy(policyResult?.data || null)
-        setPolicies(policiesResult?.data || [])
+        setPolicy((policyResult || null) as PolicyData | null)
+        setPolicies((policiesResult || []) as PolicyData[])
       } catch (err) {
         console.error('Failed to load policies:', err)
       } finally {
@@ -88,7 +88,7 @@ export const Policy = () => {
     setCalculatingPricing(true)
     try {
       const result = await pricingService.calculate(tierKey)
-      setPricing(result.data)
+      setPricing(result)
     } catch (err) {
       console.error('Failed to calculate pricing:', err)
     } finally {
@@ -122,11 +122,10 @@ export const Policy = () => {
               <button
                 key={t}
                 onClick={() => setTab(t)}
-                className={`px-4 py-3 font-semibold transition-colors ${
-                  tab === t
-                    ? 'text-purple-600 border-b-2 border-purple-600'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
+                className={`px-4 py-3 font-semibold transition-colors ${tab === t
+                  ? 'text-purple-600 border-b-2 border-purple-600'
+                  : 'text-gray-600 hover:text-gray-900'
+                  }`}
               >
                 {t === 'active' && 'Active Policy'}
                 {t === 'buy' && 'Buy Policy'}
@@ -224,9 +223,8 @@ export const Policy = () => {
                 {Object.entries(tiers).map(([key, tier]) => (
                   <div
                     key={key}
-                    className={`bg-white rounded-xl shadow-sm p-6 cursor-pointer transition-all ${
-                      selectedTier === key ? 'ring-2 ring-purple-600 shadow-lg' : ''
-                    } ${key === 'standard' ? 'md:scale-105' : ''}`}
+                    className={`bg-white rounded-xl shadow-sm p-6 cursor-pointer transition-all ${selectedTier === key ? 'ring-2 ring-purple-600 shadow-lg' : ''
+                      } ${key === 'standard' ? 'md:scale-105' : ''}`}
                     onClick={() => handleSelectTier(key)}
                   >
                     {key === 'standard' && (

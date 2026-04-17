@@ -47,6 +47,12 @@ class Claim(Base):
     trigger_measured_value = Column(Float, nullable=True)  # mm/h, °C, AQI, etc.
     trigger_type = Column(String(50), nullable=True)  # heavy_rain, extreme_heat, etc.
     
+    # Location Data (for location-based fraud detection)
+    claim_latitude = Column(Float, nullable=True)  # User's location at claim submission
+    claim_longitude = Column(Float, nullable=True)  # User's location at claim submission
+    location_distance_km = Column(Float, nullable=True)  # Distance from stored location
+    location_mismatch_flag = Column(String(50), nullable=True)  # 'nearby' (0-3km), 'moderate' (3-15km), 'far' (15km+), or None
+    
     # Fraud Analysis
     status = Column(SQLEnum(ClaimStatus), nullable=False, server_default="created")
     fraud_score = Column(Float, nullable=False, default=0.0)  # 0.0 to 1.0

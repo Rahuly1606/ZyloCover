@@ -2,7 +2,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Home, Shield, Activity, Wallet, BarChart3, User } from "lucide-react";
 
 const navItems = [
-  { path: "/", icon: Home, label: "Home" },
+  { path: "/dashboard", icon: Home, label: "Home" },
   { path: "/plans", icon: Shield, label: "Plans" },
   { path: "/monitor", icon: Activity, label: "Monitor" },
   { path: "/claims", icon: Wallet, label: "Claims" },
@@ -13,6 +13,14 @@ const navItems = [
 export default function BottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Hide bottom nav on public pages
+  const publicPaths = ["/", "/login", "/signup", "/onboarding", "/admin-login"];
+  const isAdminPath = location.pathname.startsWith("/admin");
+  
+  if (publicPaths.includes(location.pathname) || isAdminPath) {
+    return null;
+  }
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 glass-card rounded-none rounded-t-3xl border-t px-2 pb-safe">

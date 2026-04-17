@@ -25,7 +25,7 @@ export const Payouts = () => {
     const fetchData = async () => {
       try {
         const payoutsResult = await payoutsService.getPayouts(1, 50)
-        const payoutsData = payoutsResult?.data || []
+        const payoutsData = Array.isArray(payoutsResult) ? payoutsResult : []
         setPayouts(payoutsData)
 
         const totalPaid = payoutsData
@@ -67,20 +67,20 @@ export const Payouts = () => {
 
           {/* Stats */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <MetricCard 
-              label="Total Paid" 
-              value={formatters.currency(stats?.total_paid || 0)} 
-              icon={<Wallet className="h-5 w-5" />} 
+            <MetricCard
+              label="Total Paid"
+              value={formatters.currency(stats?.total_paid || 0)}
+              icon={<Wallet className="h-5 w-5" />}
             />
-            <MetricCard 
-              label="This Week" 
-              value={formatters.currency(stats?.this_week || 0)} 
-              icon={<TrendingUp className="h-5 w-5" />} 
+            <MetricCard
+              label="This Week"
+              value={formatters.currency(stats?.this_week || 0)}
+              icon={<TrendingUp className="h-5 w-5" />}
             />
-            <MetricCard 
-              label="Pending" 
-              value={stats?.pending_count || 0} 
-              icon={<Hourglass className="h-5 w-5" />} 
+            <MetricCard
+              label="Pending"
+              value={stats?.pending_count || 0}
+              icon={<Hourglass className="h-5 w-5" />}
             />
           </div>
 
@@ -98,7 +98,7 @@ export const Payouts = () => {
                   </div>
                   <div className="flex items-center justify-between">
                     <p className="text-sm text-gray-600">
-                      {payout.paid_at 
+                      {payout.paid_at
                         ? `Paid on ${formatters.dateTime(payout.paid_at)}`
                         : `Created ${formatters.dateTime(payout.created_at)}`
                       }

@@ -7,6 +7,8 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any
 from jose import JWTError, jwt
 import bcrypt
+import secrets
+import string
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer
 
@@ -28,6 +30,28 @@ def hash_password(password: str) -> str:
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against its hash"""
     return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
+
+
+def generate_admin_credential() -> str:
+    """
+    Generate a secure admin credential key
+    Format: ADMIN-XXXXXXXXXX (24 character alphanumeric)
+    """
+    chars = string.ascii_uppercase + string.digits
+    random_part = ''.join(secrets.choice(chars) for _ in range(20))
+    return f"ADMIN-{random_part}"
+
+
+def hash_admin_credential(credential: str) -> str:
+    """Hash admin credential using bcrypt"""
+    salt = bcrypt.gensalt(rounds=12)
+    hashed = bcrypt.hashpw(credential.encode("utf-8"), salt)
+    return hashed.decode("utf-8")
+
+
+def verify_admin_credential(plain_credential: str, hashed_credential: str) -> bool:
+    """Verify admin credential against its hash"""
+    return bcrypt.checkpw(plain_credential.encode("utf-8"), hashed_credential.encode("utf-8"))
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:

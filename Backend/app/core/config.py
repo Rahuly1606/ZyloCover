@@ -6,6 +6,10 @@ Settings from environment variables, with sensible defaults.
 
 from pydantic_settings import BaseSettings
 from functools import lru_cache
+from pathlib import Path
+
+
+ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
 
 
 class Settings(BaseSettings):
@@ -47,8 +51,13 @@ class Settings(BaseSettings):
     WAQI_API_KEY: str = ""         # Get from https://aqicn.org/data-platform/
     WEATHER_API_TIMEOUT: int = 5   # API call timeout in seconds
 
+    # ── Cloudinary Image Storage ────────────────────────────────────────
+    CLOUDINARY_CLOUD_NAME: str = ""      # Your Cloudinary cloud name
+    CLOUDINARY_API_KEY: str = ""         # Your Cloudinary API key
+    CLOUDINARY_API_SECRET: str = ""      # Your Cloudinary API secret
+
     class Config:
-        env_file = ".env"
+        env_file = str(ENV_FILE)
         case_sensitive = True
         extra = 'allow'  # Allow extra fields from .env
 

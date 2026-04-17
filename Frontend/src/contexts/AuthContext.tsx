@@ -5,13 +5,18 @@ export interface User {
     name: string
     email: string
     phone: string
+    employee_id: string
+    job_verification_status: string
     city: string
     zone_risk: string
     avg_daily_income: number
-    avg_weekly_income: number
+    avg_weekly_income?: number
     is_blacklisted: boolean
     risk_score: number
     fraud_flags: number
+    registered_latitude?: number
+    registered_longitude?: number
+    registered_address?: string
 }
 
 interface AuthContextType {
@@ -109,19 +114,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     return (
-        <AuthContext.Provider value={{ 
-            isAuthenticated, 
-            userId, 
+        <AuthContext.Provider value={{
+            isAuthenticated,
+            userId,
             user,
-            token, 
-            isAdmin, 
-            adminToken, 
-            login, 
-            logout, 
-            adminLogin, 
-            adminLogout, 
+            token,
+            isAdmin,
+            adminToken,
+            login,
+            logout,
+            adminLogin,
+            adminLogout,
             updateUser,
-            isLoading 
+            isLoading
         }}>
             {children}
         </AuthContext.Provider>

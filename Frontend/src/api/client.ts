@@ -28,8 +28,8 @@ class ApiClient {
         const adminToken = localStorage.getItem('admin_token')
         return {
             'Content-Type': 'application/json',
-            ...(token && { Authorization: `Bearer ${token}` }),
-            ...(adminToken && { 'X-Admin-Token': adminToken })
+            ...(adminToken && { 'X-Admin-Token': adminToken }),
+            ...(token && !adminToken && { Authorization: `Bearer ${token}` }),
         }
     }
 
@@ -75,7 +75,7 @@ class ApiClient {
             return await response.json()
         } catch (error) {
             if (isApiError(error)) throw error
-            
+
             const networkError = {
                 status: 0,
                 message: 'Network error',
@@ -87,8 +87,23 @@ class ApiClient {
         }
     }
 
-    get<T>(endpoint: string): Promise<T> {
-        return this.request<T>(endpoint, { method: 'GET' })
+    get<T>(endpoint: string, params?: Record<string, any>): Promise<T> {
+        let url = endpoint
+        if (params) {
+            const queryParams = new URLSearchParams()
+            Object.entries(params).forEach(([key, value]) => {
+                if (value !== undefined && value !== null) {
+                    if (Array.isArray(value)) {
+                        value.forEach(v => queryParams.append(key, String(v)))
+                    } else {
+                        queryParams.set(key, String(value))
+                    }
+                }
+            })
+            const queryString = queryParams.toString()
+            if (queryString) url = `${endpoint}?${queryString}`
+        }
+        return this.request<T>(url, { method: 'GET' })
     }
 
     post<T>(endpoint: string, body?: any): Promise<T> {

@@ -1,14 +1,22 @@
-import API from './api'
+import { apiClient } from '../api/client'
+
+interface UserProfile {
+  id: number
+  name: string
+  email: string
+  phone: string
+  [key: string]: any
+}
 
 export const userService = {
-  getProfile: () => API.get('/user/profile'),
+  getProfile: () => apiClient.get<UserProfile>('/user/profile'),
 
-  updateLocation: (lat: number, lng: number) => 
-    API.put('/user/profile', { latitude: lat, longitude: lng }),
+  updateLocation: (lat: number, lng: number) =>
+    apiClient.put<UserProfile>('/user/profile', { latitude: lat, longitude: lng }),
 
-  updateProfile: (data: any) => 
-    API.put('/user/profile', data),
+  updateProfile: (data: any) =>
+    apiClient.put<UserProfile>('/user/profile', data),
 
   updateIncome: (avg_daily_income: number) =>
-    API.put('/user/profile', { avg_daily_income })
+    apiClient.put<UserProfile>('/user/profile', { avg_daily_income })
 }

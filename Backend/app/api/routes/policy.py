@@ -1,9 +1,10 @@
-"""Policy management routes with actuarial calculation"""
+"""Policy management routes with AI-powered pricing and risk scoring"""
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from datetime import datetime, timedelta
 import uuid
+import logging
 
 from app.db.session import get_db
 from app.models.policy import Policy, PolicyStatus
@@ -11,6 +12,10 @@ from app.models.user import User
 from app.core.security import get_current_user
 from app.engine.actuarial import ActuarialEngine, COVERAGE_TIERS
 from app.api.schemas import PolicyResponse, PolicyCreationRequest
+from app.services.ai_client import get_ai_client
+
+logger = logging.getLogger(__name__)
+ai_client = get_ai_client()
 
 router = APIRouter(prefix="/policy", tags=["policy"])
 
@@ -22,14 +27,13 @@ async def create_policy(
     db: Session = Depends(get_db)
 ):
     """
-    Create a new weekly insurance policy.
+    Create a new weekly insurance policy with AI-powered pricing and risk assessment.
     
-    Business rules:
-    1. Only one active policy per user - cancels any existing active
-    2. 2-hour cooling period after policy expiry before new one can start
-    3. Premium calculated with full actuarial model (pure + gross + experience rating)
-    4. Policy locked to 7-day term
-    5. Full pricing breakdown stored for audit trail
+    AI Integration:
+    1. Dynamic price using trained GradientBoosting model
+    2. Risk score using trained classifier (0-100)
+    3. SHAP explainability for pricing breakdown
+    4. Fallback to formula if AI service unavailable
     """
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
@@ -64,18 +68,61 @@ async def create_policy(
     if existing_active:
         existing_active.status = PolicyStatus.EXPIRED
     
-    # Calculate premium
-    premium_calc = ActuarialEngine.calculate_final_premium(
-        daily_income=user.avg_daily_income,
-        city=user.city,
-        zone=user.work_zone,
-        platform=user.platform,
-        coverage_tier=req.coverage_tier,
-        claim_count_all_time=user.all_time_claim_count,
-        fraud_flags=user.fraud_flag_count
-    )
+    # ─── AI STEP 1: Get Dynamic Premium from Trained Model ───────────────────
+    try:
+        ai_premium_data = await ai_client.predict_premium(
+            zone=user.work_zone,
+            vehicle_type=req.vehicle_type if hasattr(req, 'vehicle_type') else "bike",
+            income_per_day=user.avg_daily_income,
+            account_age_days=(now - user.created_at).days,
+            premium_tier=req.coverage_tier,
+            num_claims_6m=len([c for c in db.query(Claim).filter(
+                Claim.user_id == user_id,
+                Claim.created_at >= now - timedelta(days=180)
+            ).all()]),
+            season=ActuarialEngine.get_current_season(user.city),
+            city=user.city
+        )
+        ai_final_premium = ai_premium_data['final_premium']
+        ai_premium_breakdown = ai_premium_data
+        ai_premium_used = True
+    except Exception as e:
+        logger.warning(f"AI premium prediction failed: {e}. Using formula fallback.")
+        # Fallback to actuarial engine
+        premium_calc = ActuarialEngine.calculate_final_premium(
+            daily_income=user.avg_daily_income,
+            city=user.city,
+            zone=user.work_zone,
+            platform=user.platform,
+            coverage_tier=req.coverage_tier,
+            claim_count_all_time=user.all_time_claim_count,
+            fraud_flags=user.fraud_flag_count
+        )
+        ai_final_premium = premium_calc["final_premium"]
+        ai_premium_breakdown = premium_calc["breakdown"]
+        ai_premium_used = False
     
-    final_premium = premium_calc["final_premium"]
+    # ─── AI STEP 2: Get Risk Score from Trained Model ──────────────────────
+    try:
+        ai_risk_data = await ai_client.predict_risk_score(
+            zone=user.work_zone,
+            vehicle_type=req.vehicle_type if hasattr(req, 'vehicle_type') else "bike",
+            income_per_day=user.avg_daily_income,
+            account_age_days=(now - user.created_at).days,
+            num_policies=len(db.query(Policy).filter(Policy.user_id == user_id).all()),
+            claims_history=len(db.query(Claim).filter(Claim.user_id == user_id).all()),
+            platform=user.platform
+        )
+        risk_score = ai_risk_data['risk_score']
+        risk_tier = ai_risk_data['risk_tier']
+        ai_risk_used = True
+    except Exception as e:
+        logger.warning(f"AI risk prediction failed: {e}. Using default.")
+        risk_score = 50  # Default neutral risk
+        risk_tier = "medium"
+        ai_risk_used = False
+    
+    final_premium = ai_final_premium
     
     # Get coverage tier details
     tier_data = COVERAGE_TIERS[req.coverage_tier]
@@ -89,7 +136,7 @@ async def create_policy(
     # Create policy number
     policy_number = f"RK-POL-{datetime.utcnow().strftime('%y%m%d')}-{uuid.uuid4().hex[:6].upper()}"
     
-    # Create policy
+    # Create policy with AI data
     policy = Policy(
         policy_number=policy_number,
         user_id=user_id,
@@ -102,14 +149,18 @@ async def create_policy(
         start_date=datetime.utcnow(),
         end_date=datetime.utcnow() + timedelta(days=7),
         status=PolicyStatus.ACTIVE,
-        pricing_breakdown=premium_calc["breakdown"],
+        pricing_breakdown=ai_premium_breakdown,
         risk_snapshot={
             "city": user.city,
             "zone": user.work_zone,
             "platform": user.platform,
             "season": ActuarialEngine.get_current_season(user.city),
+            "ai_risk_score": risk_score,
+            "ai_risk_tier": risk_tier,
+            "ai_pricing_used": ai_premium_used,
+            "ai_risk_used": ai_risk_used
         },
-        cooling_period_ends_at=None,  # Will be set on expiry
+        cooling_period_ends_at=None,
         total_claimed_this_week=0.0,
         claim_count_this_week=0
     )
@@ -118,6 +169,7 @@ async def create_policy(
     db.commit()
     db.refresh(policy)
     
+    return policy
     return policy
 
 

@@ -5,18 +5,22 @@ import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/common/Button'
 
 export const Navbar = () => {
-  const { user, isAuthenticated, isAdmin, logout, adminLogout } = useAuth()
+  const { user, isAuthenticated, isAdmin, adminToken, logout, adminLogout } = useAuth()
   const [showMenu, setShowMenu] = useState(false)
   const navigate = useNavigate()
 
+  // Check if user is logged in (either as regular user or admin)
+  const isLoggedIn = isAuthenticated || (isAdmin && adminToken)
+
   const handleLogout = () => {
-    if (isAdmin) {
+    if (isAdmin && adminToken) {
       adminLogout()
+      navigate('/admin-login')
     } else {
       logout()
+      navigate('/')
     }
     setShowMenu(false)
-    navigate('/')
   }
 
   return (
@@ -32,7 +36,7 @@ export const Navbar = () => {
           </Link>
 
           {/* Right Side */}
-          {isAuthenticated ? (
+          {isLoggedIn ? (
             // Authenticated User Menu
             <div className="relative">
               <button
@@ -40,11 +44,11 @@ export const Navbar = () => {
                 className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded-lg"
               >
                 <div className="text-right">
-                  <p className="text-sm font-semibold text-gray-900">{user?.name || 'User'}</p>
+                  <p className="text-sm font-semibold text-gray-900">{user?.name || (isAdmin ? 'Admin' : 'User')}</p>
                   <p className="text-xs text-gray-600">{isAdmin ? 'Admin' : 'Worker'}</p>
                 </div>
                 <div className="w-8 h-8 bg-purple-600 rounded-full text-white flex items-center justify-center text-sm font-bold">
-                  {(user?.name?.[0] || 'U').toUpperCase()}
+                  {(user?.name?.[0] || (isAdmin ? 'A' : 'U')).toUpperCase()}
                 </div>
               </button>
 
