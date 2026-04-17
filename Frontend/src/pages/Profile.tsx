@@ -126,7 +126,7 @@ export const Profile = () => {
 
   // Auto-refresh current location every 30 seconds
   useEffect(() => {
-    if (!user || !user.latitude || !user.longitude) return;
+    if (!user || !user.base_latitude || !user.base_longitude) return;
 
     const refreshLocation = async () => {
       if (!navigator.geolocation) return;
@@ -138,8 +138,8 @@ export const Profile = () => {
           try {
             // Only update if location changed significantly (>100 meters)
             const distance = calculateDistance(
-              user.latitude!,
-              user.longitude!,
+              user.base_latitude!,
+              user.base_longitude!,
               latitude,
               longitude
             );
@@ -157,9 +157,9 @@ export const Profile = () => {
 
               // Auto-update location in background
               await userApi.updateProfile({
-                latitude,
-                longitude,
-                address,
+                base_latitude: latitude,
+                base_longitude: longitude,
+                base_address: address,
               });
 
               console.log('Location auto-updated:', { latitude, longitude, address });
@@ -218,9 +218,9 @@ export const Profile = () => {
         avg_daily_income: formData.avg_daily_income,
         avg_daily_hours: formData.avg_daily_hours,
         experience_months: formData.experience_months,
-        latitude: formData.latitude,
-        longitude: formData.longitude,
-        address: formData.address,
+        base_latitude: formData.base_latitude,
+        base_longitude: formData.base_longitude,
+        base_address: formData.base_address,
       });
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
@@ -261,18 +261,18 @@ export const Profile = () => {
 
             setFormData((prev) => ({
               ...prev,
-              latitude,
-              longitude,
-              address,
+              base_latitude: latitude,
+              base_longitude: longitude,
+              base_address: address,
             }));
             alert("Location captured successfully.");
           } catch (err) {
             console.error("Geocoding error:", err);
             setFormData((prev) => ({
               ...prev,
-              latitude,
-              longitude,
-              address: "Location captured",
+              base_latitude: latitude,
+              base_longitude: longitude,
+              base_address: "Location captured",
             }));
             alert("Location captured (address lookup failed).");
           }
@@ -573,23 +573,23 @@ export const Profile = () => {
             <Navigation className="h-5 w-5 text-purple-600" />
             Current Location
           </h3>
-          {user.address || (user.latitude && user.longitude) ? (
+          {user.base_address || (user.base_latitude && user.base_longitude) ? (
             <div className="p-4 bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg border border-blue-200 space-y-3">
-              {user.address && (
+              {user.base_address && (
                 <div>
                   <p className="text-xs text-muted-foreground mb-1">Address</p>
-                  <p className="text-sm font-semibold text-slate-900">{user.address}</p>
+                  <p className="text-sm font-semibold text-slate-900">{user.base_address}</p>
                 </div>
               )}
-              {user.latitude && user.longitude && (
+              {user.base_latitude && user.base_longitude && (
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <p className="text-xs text-muted-foreground">Latitude</p>
-                    <p className="text-xs font-mono text-slate-700">{user.latitude.toFixed(4)}</p>
+                    <p className="text-xs font-mono text-slate-700">{user.base_latitude.toFixed(4)}</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Longitude</p>
-                    <p className="text-xs font-mono text-slate-700">{user.longitude.toFixed(4)}</p>
+                    <p className="text-xs font-mono text-slate-700">{user.base_longitude.toFixed(4)}</p>
                   </div>
                 </div>
               )}
@@ -840,25 +840,25 @@ export const Profile = () => {
                 <p className="text-xs text-slate-600 mb-2">
                   This helps us provide accurate coverage and risk assessment for your work area.
                 </p>
-                {formData.address || (formData.latitude && formData.longitude) ? (
+                {formData.base_address || (formData.base_latitude && formData.base_longitude) ? (
                   <div className="p-3 bg-green-50 rounded-lg border border-green-200 space-y-2">
-                    {formData.address && (
+                    {formData.base_address && (
                       <div>
                         <p className="text-xs text-green-600 font-medium">Current Address</p>
                         <p className="text-sm font-semibold text-green-700">
-                          {formData.address}
+                          {formData.base_address}
                         </p>
                       </div>
                     )}
-                    {formData.latitude && formData.longitude && (
+                    {formData.base_latitude && formData.base_longitude && (
                       <div className="flex items-center gap-3 text-xs">
                         <div>
                           <span className="text-green-600">Lat:</span>
-                          <span className="font-mono text-green-700 ml-1">{formData.latitude.toFixed(4)}</span>
+                          <span className="font-mono text-green-700 ml-1">{formData.base_latitude.toFixed(4)}</span>
                         </div>
                         <div>
                           <span className="text-green-600">Lon:</span>
-                          <span className="font-mono text-green-700 ml-1">{formData.longitude.toFixed(4)}</span>
+                          <span className="font-mono text-green-700 ml-1">{formData.base_longitude.toFixed(4)}</span>
                         </div>
                       </div>
                     )}
@@ -881,7 +881,7 @@ export const Profile = () => {
                   ) : (
                     <>
                       <Navigation className="mr-2 h-4 w-4" />
-                      {formData.address ? "Update Location" : "Capture My Location"}
+                      {formData.base_address ? "Update Location" : "Capture My Location"}
                     </>
                   )}
                 </Button>
