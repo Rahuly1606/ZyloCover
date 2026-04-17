@@ -1,1 +1,1 @@
-web: python fix_db.py && python start.py
+web: alembic upgrade head && python start.py
