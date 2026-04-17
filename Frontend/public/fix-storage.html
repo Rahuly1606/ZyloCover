@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZyloCover - Fix LocalStorage</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #0f172a;
+            color: #e2e8f0;
+        }
+        .container {
+            background: #1e293b;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        h1 { color: #3b82f6; margin-top: 0; }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover { background: #2563eb; }
+        button.danger { background: #ef4444; }
+        button.danger:hover { background: #dc2626; }
+        .log {
+            background: #0f172a;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-family: monospace;
+            font-size: 14px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .log div { margin: 5px 0; }
+        .success { color: #10b981; }
+        .error { color: #ef4444; }
+        .info { color: #3b82f6; }
+        .warning { color: #f59e0b; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 ZyloCover LocalStorage Fix</h1>
+        <p>This tool will clean up conflicting tokens from other projects and fix your ZyloCover authentication.</p>
+        
+        <div style="margin: 20px 0;">
+            <button onclick="analyzeStorage()">🔍 Analyze Storage</button>
+            <button onclick="fixStorage()">✅ Fix Storage</button>
+            <button class="danger" onclick="clearAll()">🗑️ Clear All & Logout</button>
+        </div>
+
+        <div id="log" class="log"></div>
+    </div>
+
+    <script>
+        const log = document.getElementById('log');
+
+        function addLog(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = type;
+            div.textContent = message;
+            log.appendChild(div);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function analyzeStorage() {
+            log.innerHTML = '';
+            addLog('=== ANALYZING LOCALSTORAGE ===', 'info');
+            
+            const zylocoverKeys = ['access_token', 'admin_token', 'user_id', 'user_data', 'onboarded'];
+            const allKeys = Object.keys(localStorage);
+            
+            addLog(`Total keys found: ${allKeys.length}`, 'info');
+            addLog('', 'info');
+            
+            // ZyloCover keys
+            addLog('✅ ZyloCover Keys:', 'success');
+            zylocoverKeys.forEach(key => {
+                const value = localStorage.getItem(key);
+                if (value) {
+                    addLog(`  ${key}: ${value.substring(0, 50)}...`, 'success');
+                } else {
+                    addLog(`  ${key}: NOT FOUND`, 'warning');
+                }
+            });
+            
+            addLog('', 'info');
+            
+            // Conflicting keys
+            const conflictingKeys = allKeys.filter(k => !zylocoverKeys.includes(k));
+            if (conflictingKeys.length > 0) {
+                addLog('⚠️ CONFLICTING KEYS (from other projects):', 'warning');
+                conflictingKeys.forEach(key => {
+                    addLog(`  ${key}`, 'error');
+                });
+            } else {
+                addLog('✅ No conflicting keys found!', 'success');
+            }
+            
+            addLog('', 'info');
+            
+            // Check for wrong key names
+            if (localStorage.getItem('adminToken')) {
+                addLog('⚠️ Found "adminToken" - should be "admin_token"', 'warning');
+            }
+            
+            // Check token validity
+            const accessToken = localStorage.getItem('access_token');
+            if (accessToken) {
+                try {
+                    const payload = JSON.parse(atob(accessToken.split('.')[1]));
+                    const exp = payload.exp * 1000;
+                    const now = Date.now();
+                    if (exp < now) {
+                        addLog('❌ access_token is EXPIRED', 'error');
+                        addLog(`  Expired: ${new Date(exp).toLocaleString()}`, 'error');
+                    } else {
+                        addLog('✅ access_token is VALID', 'success');
+                        addLog(`  Expires: ${new Date(exp).toLocaleString()}`, 'success');
+                    }
+                } catch (e) {
+                    addLog('❌ access_token is INVALID (malformed)', 'error');
+                }
+            }
+        }
+
+        function fixStorage() {
+            log.innerHTML = '';
+            addLog('=== FIXING LOCALSTORAGE ===', 'info');
+            
+            const zylocoverKeys = ['access_token', 'admin_token', 'user_id', 'user_data', 'onboarded'];
+            const allKeys = Object.keys(localStorage);
+            
+            // Remove conflicting keys
+            let removed = 0;
+            allKeys.forEach(key => {
+                if (!zylocoverKeys.includes(key)) {
+                    localStorage.removeItem(key);
+                    addLog(`🗑️ Removed: ${key}`, 'warning');
+                    removed++;
+                }
+            });
+            
+            if (removed > 0) {
+                addLog(`✅ Removed ${removed} conflicting keys`, 'success');
+            } else {
+                addLog('✅ No conflicting keys to remove', 'success');
+            }
+            
+            addLog('', 'info');
+            
+            // Fix adminToken → admin_token
+            if (localStorage.getItem('adminToken')) {
+                const token = localStorage.getItem('adminToken');
+                localStorage.setItem('admin_token', token);
+                localStorage.removeItem('adminToken');
+                addLog('✅ Fixed: adminToken → admin_token', 'success');
+            }
+            
+            addLog('', 'info');
+            addLog('=== VERIFICATION ===', 'info');
+            
+            // Verify ZyloCover keys
+            const accessToken = localStorage.getItem('access_token');
+            const userId = localStorage.getItem('user_id');
+            const userData = localStorage.getItem('user_data');
+            
+            if (accessToken && userId && userData) {
+                addLog('✅ All required keys present', 'success');
+                
+                // Check token validity
+                try {
+                    const payload = JSON.parse(atob(accessToken.split('.')[1]));
+                    const exp = payload.exp * 1000;
+                    const now = Date.now();
+                    
+                    if (exp < now) {
+                        addLog('❌ Token is EXPIRED - Please login again', 'error');
+                        addLog('', 'info');
+                        addLog('Click "Clear All & Logout" then login again', 'warning');
+                    } else {
+                        addLog('✅ Token is VALID', 'success');
+                        addLog('', 'info');
+                        addLog('🎉 STORAGE FIXED! Refresh the page.', 'success');
+                        
+                        setTimeout(() => {
+                            if (confirm('Storage fixed! Refresh page now?')) {
+                                location.href = '/';
+                            }
+                        }, 1000);
+                    }
+                } catch (e) {
+                    addLog('❌ Token is INVALID - Please login again', 'error');
+                    addLog('', 'info');
+                    addLog('Click "Clear All & Logout" then login again', 'warning');
+                }
+            } else {
+                addLog('⚠️ Missing required keys - Please login', 'warning');
+                addLog('', 'info');
+                addLog('Click "Clear All & Logout" then login again', 'warning');
+            }
+        }
+
+        function clearAll() {
+            if (confirm('This will clear ALL data and log you out. Continue?')) {
+                log.innerHTML = '';
+                addLog('=== CLEARING ALL DATA ===', 'info');
+                
+                const count = localStorage.length;
+                localStorage.clear();
+                
+                addLog(`✅ Cleared ${count} items from localStorage`, 'success');
+                addLog('', 'info');
+                addLog('🎉 DONE! Redirecting to login...', 'success');
+                
+                setTimeout(() => {
+                    location.href = '/login';
+                }, 2000);
+            }
+        }
+
+        // Auto-analyze on load
+        window.onload = () => {
+            analyzeStorage();
+        };
+    </script>
+</body>
+</html>

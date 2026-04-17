@@ -24,8 +24,38 @@ class ApiClient {
     }
 
     private getHeaders(): HeadersInit {
-        const token = localStorage.getItem('access_token')
-        const adminToken = localStorage.getItem('admin_token')
+        // Clean up: Remove conflicting tokens from other projects
+        const conflictingKeys = ['token', 'authState', 'faceattend_auth_token', 'faceattend_user', 'user', 'userId', 'dt_solved'];
+        conflictingKeys.forEach(key => {
+            if (localStorage.getItem(key)) {
+                console.warn(`[ZyloCover] Removing conflicting key: ${key}`);
+                localStorage.removeItem(key);
+            }
+        });
+
+        // Fix adminToken → admin_token if exists
+        if (localStorage.getItem('adminToken') && !localStorage.getItem('admin_token')) {
+            const token = localStorage.getItem('adminToken');
+            if (token) {
+                localStorage.setItem('admin_token', token);
+                localStorage.removeItem('adminToken');
+                console.log('[ZyloCover] Fixed: adminToken → admin_token');
+            }
+        }
+
+        const token = localStorage.getItem('access_token');
+        const adminToken = localStorage.getItem('admin_token');
+        
+        // Debug logging
+        if (process.env.NODE_ENV === 'development') {
+            console.log('[ZyloCover Auth]', {
+                hasAccessToken: !!token,
+                hasAdminToken: !!adminToken,
+                accessTokenPreview: token ? token.substring(0, 20) + '...' : null,
+                adminTokenPreview: adminToken ? adminToken.substring(0, 20) + '...' : null
+            });
+        }
+        
         return {
             'Content-Type': 'application/json',
             ...(adminToken && { 'X-Admin-Token': adminToken }),
@@ -66,8 +96,17 @@ class ApiClient {
                 console.error(`API Error [${response.status}]:`, {
                     endpoint,
                     detail: error.detail,
-                    method: options.method || 'GET'
+                    method: options.method || 'GET',
+                    hasToken: !!localStorage.getItem('access_token'),
+                    hasAdminToken: !!localStorage.getItem('admin_token')
                 })
+
+                // Handle 401 Unauthorized
+                if (response.status === 401) {
+                    console.error('[ZyloCover] 401 Unauthorized - Token may be expired or invalid');
+                    console.error('[ZyloCover] Please clear localStorage and login again');
+                    console.error('[ZyloCover] Or visit: http://localhost:5173/fix-storage.html');
+                }
 
                 throw error
             }
