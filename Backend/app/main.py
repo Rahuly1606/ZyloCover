@@ -93,25 +93,25 @@ app = FastAPI(
 )
 
 # ── CORS ──────────────────────────────────────────────────────────────────
-# Development: allow all | Production: restrict to frontend domain
-default_origins = "http://localhost:5173,http://localhost:3000,http://localhost:8080,http://localhost:5174,https://zylo-cover.vercel.app"
+# CRITICAL: Allow all origins by default for deployment
+default_origins = "*"
 allowed_origins_str = os.getenv("ALLOWED_ORIGINS", default_origins)
 
-# Parse origins and add wildcard for Vercel preview deployments
-allowed_origins = [url.strip() for url in allowed_origins_str.split(",")]
+logger.info(f"CORS Configuration: {allowed_origins_str}")
 
-# Add Vercel preview URLs pattern (*.vercel.app)
-if any("vercel.app" in origin for origin in allowed_origins):
-    # Allow all Vercel deployments
-    allowed_origins.append("https://*.vercel.app")
-
-logger.info(f"CORS allowed origins: {allowed_origins}")
+# Parse origins
+if allowed_origins_str == "*":
+    logger.warning("⚠️ CORS: Allowing ALL origins")
+    allowed_origins = ["*"]
+else:
+    allowed_origins = [url.strip() for url in allowed_origins_str.split(",")]
+    logger.info(f"CORS: Specific origins: {allowed_origins}")
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["*"],
 )
