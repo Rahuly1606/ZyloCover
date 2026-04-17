@@ -129,10 +129,9 @@ async def get_user_full_profile(
                 "weekly_premium": p.weekly_premium,
                 "daily_income_insured": p.daily_income_insured,
                 "max_weekly_payout": p.max_weekly_payout,
-                "status": p.status,
+                "status": p.status.value if hasattr(p.status, 'value') else p.status,
                 "start_date": p.start_date.isoformat() if p.start_date else None,
                 "end_date": p.end_date.isoformat() if p.end_date else None,
-                "work_zone": p.work_zone,
                 "created_at": p.created_at.isoformat() if p.created_at else None,
             }
             for p in policies
@@ -144,12 +143,11 @@ async def get_user_full_profile(
                 "id": c.id,
                 "policy_id": c.policy_id,
                 "trigger_type": c.trigger_type,
-                "trigger_data": c.trigger_data,
-                "amount_claimed": c.amount_claimed,
-                "fraud_score": round(c.fraud_score, 4),
-                "fraud_indicators": c.fraud_indicators,
-                "status": c.status,
-                "admin_notes": c.admin_notes,
+                "hours_lost": c.hours_lost,
+                "net_payout_inr": c.net_payout_inr,
+                "fraud_score": round(c.fraud_score, 4) if c.fraud_score else 0.0,
+                "fraud_flags": c.fraud_flags,
+                "status": c.status.value if hasattr(c.status, 'value') else c.status,
                 "created_at": c.created_at.isoformat() if c.created_at else None,
                 "updated_at": c.updated_at.isoformat() if c.updated_at else None,
             }
@@ -159,12 +157,12 @@ async def get_user_full_profile(
         # Summary Stats
         "summary": {
             "total_policies": len(policies),
-            "active_policies": len([p for p in policies if p.status == "active"]),
+            "active_policies": len([p for p in policies if str(p.status).lower() == "active"]),
             "total_claims": len(claims),
-            "approved_claims": len([c for c in claims if c.status == "approved"]),
-            "rejected_claims": len([c for c in claims if c.status == "rejected"]),
-            "pending_claims": len([c for c in claims if c.status in ["pending", "fraud_review"]]),
-            "total_claimed_amount": sum(c.amount_claimed for c in claims),
+            "approved_claims": len([c for c in claims if str(c.status).lower() == "approved"]),
+            "rejected_claims": len([c for c in claims if str(c.status).lower() == "rejected"]),
+            "pending_claims": len([c for c in claims if str(c.status).lower() in ["created", "eligible", "fraud_review"]]),
+            "total_claimed_amount": sum(c.net_payout_inr for c in claims),
         }
     }
 
@@ -226,12 +224,11 @@ async def get_claim_full_details(
         "id": claim.id,
         "policy_id": claim.policy_id,
         "trigger_type": claim.trigger_type,
-        "trigger_data": claim.trigger_data,
-        "amount_claimed": claim.amount_claimed,
-        "fraud_score": round(claim.fraud_score, 4),
-        "fraud_indicators": claim.fraud_indicators,
-        "status": claim.status,
-        "admin_notes": claim.admin_notes,
+        "hours_lost": claim.hours_lost,
+        "net_payout_inr": claim.net_payout_inr,
+        "fraud_score": round(claim.fraud_score, 4) if claim.fraud_score else 0.0,
+        "fraud_flags": claim.fraud_flags,
+        "status": claim.status.value if hasattr(claim.status, 'value') else claim.status,
         "created_at": claim.created_at.isoformat() if claim.created_at else None,
         "updated_at": claim.updated_at.isoformat() if claim.updated_at else None,
         
@@ -262,6 +259,6 @@ async def get_claim_full_details(
             "id": claim.policy.id if claim.policy else None,
             "policy_number": claim.policy.policy_number if claim.policy else None,
             "coverage_tier": claim.policy.coverage_tier if claim.policy else None,
-            "status": claim.policy.status if claim.policy else None,
+            "status": claim.policy.status.value if (claim.policy and hasattr(claim.policy.status, 'value')) else (claim.policy.status if claim.policy else None),
         } if claim.policy else None,
     }

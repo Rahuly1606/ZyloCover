@@ -443,11 +443,27 @@ function ApprovalsTab() {
                             <div>
                                 <h3 className="text-lg font-bold text-gray-900 mb-3">Location Data</h3>
                                 <div className="grid grid-cols-1 gap-4">
-                                    <InfoField label="Address" value={selectedUser.registered_address} />
+                                    <InfoField label="Address" value={selectedUser.registered_address || 'Not provided'} />
                                     <InfoField
-                                        label="Coordinates"
-                                        value={`${selectedUser.registered_latitude}, ${selectedUser.registered_longitude}`}
+                                        label="GPS Coordinates"
+                                        value={
+                                            selectedUser.registered_latitude && selectedUser.registered_longitude
+                                                ? `Lat: ${selectedUser.registered_latitude.toFixed(6)}, Long: ${selectedUser.registered_longitude.toFixed(6)}`
+                                                : 'Not provided'
+                                        }
                                     />
+                                    {selectedUser.registered_latitude && selectedUser.registered_longitude && (
+                                        <div className="mt-2">
+                                            <a
+                                                href={`https://www.google.com/maps?q=${selectedUser.registered_latitude},${selectedUser.registered_longitude}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-sm text-purple-600 hover:text-purple-800 underline"
+                                            >
+                                                📍 View on Google Maps
+                                            </a>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
